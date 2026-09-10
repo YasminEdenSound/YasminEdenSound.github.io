@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Yasmin Eden Sound — mixing, mastering, recording</title>
+<meta name="description" content="I'm Yasmin Eden — an independent engineer mixing, mastering and recording for bands and solo artists. Send me your demos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12110E; --cream:#F2EDE1; --body:#CFC9BC; --dim:#9A9384; --acc:#E9C846;
+  --release:cubic-bezier(.22,1,.28,1);
+  --gut:28px;
+  --band:1120px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{
+  scroll-behavior:smooth;
+  /* proximity, not mandatory: mandatory traps inside the rates and booking
+     sections, which are legitimately taller than the viewport. snap-stop
+     always still forces one gesture = one chapter through the journey. */
+  scroll-snap-type:y proximity;
+  -webkit-text-size-adjust:100%;
+}
+body{
+  background:var(--ink);color:var(--cream);
+  font-family:'Instrument Sans',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:var(--acc);text-decoration:none}
+img{max-width:100%;height:auto;display:block}
+input,textarea,button{font:inherit;color:inherit}
+
+/* ============ the instrument (fixed, follows you) ============ */
+#rig{position:fixed;inset:0;z-index:1;pointer-events:none;transition:opacity .5s ease}
+#rig svg{width:100%;height:100%;display:block}
+.string{fill:none;stroke:var(--cream);stroke-width:1.25;stroke-linecap:round}
+.note{fill:var(--acc)}
+.mark-petal{fill:var(--cream)}
+.mark-core{fill:var(--acc)}
+
+#head{position:fixed;z-index:2;pointer-events:none;display:flex;align-items:center}
+#head .rule{flex:1;height:1px;background:linear-gradient(90deg,
+      rgba(233,200,70,0) 0%, rgba(233,200,70,.5) 12%, rgba(233,200,70,.5) 88%, rgba(233,200,70,0) 100%)}
+#head .tc{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.18em;
+      color:var(--acc);padding:0 14px;white-space:nowrap}
+
+#ruler{position:fixed;top:0;right:0;bottom:0;width:54px;z-index:3;pointer-events:none;
+       display:flex;flex-direction:column;justify-content:center;transition:opacity .4s}
+#ruler .tick{position:relative;flex:1;display:flex;align-items:center;justify-content:flex-end;
+       padding-right:14px;font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
+       color:var(--dim);opacity:.45;transition:opacity .3s,color .3s}
+#ruler .tick::after{content:'';position:absolute;right:0;top:50%;width:7px;height:1px;background:currentColor}
+#ruler .tick.on{opacity:1;color:var(--acc)}
+
+/* ============ chrome ============ */
+/* Sticky nav — the Book CTA is never more than one tap away, at any
+   scroll position, on any screen. */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:30;
+  background:rgba(18,17,14,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(242,237,225,.09);
+}
+#topbar .inner{
+  max-width:var(--band);margin:0 auto;padding:13px var(--gut);
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;
+}
+#topbar .wordmark{display:flex;align-items:center;gap:10px;color:var(--cream)}
+#topbar .wordmark span{font-family:'Instrument Serif',Georgia,serif;font-size:19px}
+#topbar .right{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
+#topbar .links{display:flex;gap:22px;
+  font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase}
+#topbar .links a{color:var(--dim);transition:color .15s}
+#topbar .links a:hover{color:var(--cream)}
+#topbar .book{
+  padding:9px 18px;border:1px solid var(--acc);border-radius:999px;
+  font-size:13px;font-weight:500;white-space:nowrap;color:var(--acc);
+  transition:background .15s,color .15s;
+}
+#topbar .book:hover{background:var(--acc);color:var(--ink)}
+/* anchors must clear the fixed bar */
+html{scroll-padding-top:74px}
+
+#snd{
+  position:fixed;right:68px;bottom:20px;z-index:31;
+  font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--acc);background:rgba(18,17,14,.72);backdrop-filter:blur(8px);
+  border:1px solid rgba(233,200,70,.45);border-radius:999px;padding:11px 16px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+#snd:hover,#snd[aria-pressed="true"]{background:var(--acc);color:var(--ink)}
+#snd:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+
+/* ============ journey ============ */
+main{position:relative;z-index:4}
+#intro,.chapter{scroll-snap-align:center;scroll-snap-stop:always}
+
+#intro{
+  min-height:100svh;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  gap:20px;padding:0 var(--gut);max-width:var(--band);margin:0 auto;
+}
+.eyebrow{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.28em;
+  text-transform:uppercase;color:var(--acc)}
+#intro h1{
+  font-family:'Instrument Serif',Georgia,serif;font-weight:400;
+  font-size:clamp(42px,7.4vw,94px);line-height:.99;letter-spacing:-.015em;max-width:15ch;
+  text-wrap:balance;
+}
+#intro .sub{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--body);max-width:44ch}
+.scrollcue{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim);margin-top:12px;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(5px);opacity:1}}
+
+.chapter{
+  min-height:100svh;display:flex;align-items:center;
+  padding:14vh var(--gut);max-width:var(--band);margin:0 auto;
+}
+.copy{max-width:44ch}
+.kicker{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--acc);margin-bottom:18px;display:block}
+.chapter h2{
+  font-family:'Instrument Serif',Georgia,serif;font-weight:400;
+  font-size:clamp(32px,5.2vw,60px);line-height:1.03;letter-spacing:-.012em;
+  text-wrap:balance;margin-bottom:20px;
+}
+.chapter p{font-size:clamp(16px,1.5vw,18px);line-height:1.68;color:var(--body);text-wrap:pretty}
+.chapter p + p{margin-top:14px}
+.ph{color:var(--dim)}
+
+/* reveals — fast attack, long release */
+[data-reveal]{opacity:0;transform:translateY(18px);
+  transition:opacity .55s ease, transform .8s var(--release)}
+[data-reveal].in{opacity:1;transform:none}
+
+/* ============ act II ============ */
+section.act2{position:relative;z-index:4;max-width:var(--band);margin:0 auto;
+  padding:clamp(64px,9vw,104px) var(--gut)}
+.band{position:relative;z-index:4;background:rgba(242,237,225,.03);
+  border-top:1px solid rgba(242,237,225,.09);border-bottom:1px solid rgba(242,237,225,.09)}
+.band > section.act2{padding-top:clamp(56px,8vw,96px);padding-bottom:clamp(56px,8vw,96px)}
+.head2{display:flex;align-items:baseline;gap:18px;margin-bottom:14px;flex-wrap:wrap}
+.num{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.24em;color:var(--acc)}
+.head2 h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;
+  font-size:clamp(28px,4vw,46px);line-height:1.05}
+.lede{max-width:46ch;color:var(--dim);font-size:16px;line-height:1.6;margin-bottom:38px;text-wrap:pretty}
+
+.grid{display:grid;gap:22px}
+.g-work{grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
+.g-rates{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.g-two{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));
+  gap:clamp(32px,5vw,64px);align-items:center}
+
+/* --- track cards: real player, real analysis --- */
+.track{display:flex;flex-direction:column;gap:14px;padding:20px;
+  border:1px solid rgba(242,237,225,.11);border-radius:4px;background:rgba(242,237,225,.02);
+  transition:border-color .2s,background .2s}
+.track.playing{border-color:rgba(233,200,70,.45);background:rgba(233,200,70,.045)}
+.track .row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.track .ttl{font-family:'Instrument Serif',Georgia,serif;font-size:22px;line-height:1.15}
+.track .cred{font:500 10px/1.4 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);margin-top:6px}
+.track .state{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);white-space:nowrap;padding-top:4px}
+.track.playing .state{color:var(--acc)}
+.track canvas{width:100%;height:44px;display:block}
+.track .ctl{display:flex;align-items:center;gap:12px}
+.play{width:44px;height:44px;flex:none;border-radius:999px;border:1px solid var(--acc);
+  background:none;color:var(--acc);cursor:pointer;display:grid;place-items:center;
+  transition:background .15s,color .15s}
+.play:hover:not(:disabled){background:var(--acc);color:var(--ink)}
+.play:disabled{opacity:.35;cursor:not-allowed}
+.play svg{width:13px;height:13px;fill:currentColor}
+.track .time{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;color:var(--dim)}
+.track .missing{font:500 9px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim)}
+
+/* --- portrait --- */
+.portrait{background:var(--acc);border-radius:3px;overflow:hidden;align-self:start}
+.portrait img{filter:grayscale(1) contrast(1.12) brightness(1.04);mix-blend-mode:multiply;width:100%}
+dl.stats{margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:20px}
+dl.stats dt{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+dl.stats dd{font-family:'Instrument Serif',Georgia,serif;font-size:20px}
+
+/* --- rates --- */
+.rate{display:flex;flex-direction:column;gap:18px;padding:28px;
+  border:1px solid rgba(242,237,225,.11);border-radius:4px}
+.rate.lead{border-color:rgba(233,200,70,.34);background:rgba(233,200,70,.04)}
+.rate h3{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:26px}
+.price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.price .from,.price .unit{font:500 10px/1 'Geist Mono',ui-monospace,monospace;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.price .fig{font-family:'Instrument Serif',Georgia,serif;font-size:38px;color:var(--acc)}
+.rate ul{list-style:none;display:flex;flex-direction:column;gap:10px;
+  font-size:15px;line-height:1.5;color:var(--body)}
+
+/* --- booking --- */
+.contact a{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:16px 0;border-top:1px solid rgba(242,237,225,.12);color:var(--cream);
+  transition:color .15s;min-height:56px}
+.contact a:last-child{border-bottom:1px solid rgba(242,237,225,.12)}
+.contact a:hover{color:var(--acc)}
+.contact .lbl{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim)}
+form{display:flex;flex-direction:column;gap:18px;padding:clamp(22px,3vw,34px);
+  border:1px solid rgba(242,237,225,.13);border-radius:4px;background:var(--ink)}
+form label{display:flex;flex-direction:column;gap:9px}
+form .cap{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dim)}
+form input,form textarea{padding:13px 14px;background:rgba(242,237,225,.05);
+  border:1px solid rgba(242,237,225,.14);border-radius:3px;
+  font-size:16px;outline:none;transition:border-color .15s}  /* 16px stops iOS zoom */
+form textarea{line-height:1.5;resize:vertical}
+form input:focus,form textarea:focus{border-color:var(--acc)}
+.solid{padding:15px 24px;background:var(--acc);color:var(--ink);border:none;border-radius:999px;
+  font-size:15px;font-weight:600;cursor:pointer;
+  transition:transform .15s var(--release),box-shadow .15s}
+.solid:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(233,200,70,.22)}
+.note-sm{font:500 9px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;color:var(--dim)}
+
+footer{position:relative;z-index:4;border-top:1px solid rgba(242,237,225,.09);
+  padding:34px var(--gut);display:flex;flex-wrap:wrap;gap:14px;
+  align-items:center;justify-content:space-between;max-width:var(--band);margin:0 auto}
+footer .left{display:flex;align-items:center;gap:10px;
+  font-family:'Instrument Serif',Georgia,serif;font-size:17px}
+footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim)}
+
+/* ============ loading intro ============
+   Five channel bars arrive as a level readout with a quarter note on the
+   centre line; a playhead sweeps across, sounds the note, and releases each
+   channel into a petal as it clears that channel's right end. ~1.9s. */
+#loader{
+  position:fixed;inset:0;z-index:100;background:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;
+  transition:opacity .7s ease, visibility .7s;
+}
+/* MUST be `0 0`. With transform-box:view-box, browsers resolve percentages
+   against the viewBox size but ignore its -50 -50 min-x/min-y, so 50% pivots
+   on the corner and every rotated petal swings off-canvas. */
+.ld-bar,.ld-pet,.ld-nhead,.ld-stem,.ld-ring,.ld-head{transform-box:view-box;transform-origin:0 0}
+
+@keyframes ldBarIn{from{transform:translateX(-124px);opacity:0}to{transform:translateX(0);opacity:1}}
+.ld-bar{animation:ldBarIn .38s cubic-bezier(.05,.8,.2,1) var(--in) both}
+
+/* transport is the one thing timed linear — it does not ease */
+@keyframes ldSweep{0%{transform:translateX(-46px);opacity:0}9%{opacity:1}84%{opacity:1}100%{transform:translateX(46px);opacity:0}}
+.ld-head{filter:drop-shadow(0 0 2.5px rgba(233,200,70,.55));animation:ldSweep .62s linear .46s both}
+
+/* Each petal is a <rect>: with rx=w/2, ry=h/2 it renders as a true ellipse,
+   and at rx=ry=half-thickness it is a bar with round caps. An ellipse
+   squashed flat is always a lens. Corner radii track min(w,h)/2 at every
+   stop or it goes boxy midway — hence generated keyframes, running linear
+   with the easing baked into the stop positions. */
+@keyframes ldBloom0{
+  0%{x:-42px;y:-23.5px;width:32px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
+  8.333%{x:-31.66px;y:-32.235px;width:29.861px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(77.013deg)}
+  16.667%{x:-23.709px;y:-38.953px;width:28.216px;height:28.86px;rx:14.108px;ry:14.43px;transform:rotate(136.236deg)}
+  25%{x:-18.799px;y:-43.101px;width:27.2px;height:35.802px;rx:13.6px;ry:17.901px;transform:rotate(172.808deg)}
+  33.333%{x:-16.097px;y:-45.384px;width:26.641px;height:39.622px;rx:13.32px;ry:19.811px;transform:rotate(192.934deg)}
+  41.667%{x:-14.635px;y:-46.619px;width:26.338px;height:41.689px;rx:13.169px;ry:20.844px;transform:rotate(203.824deg)}
+  50%{x:-13.837px;y:-47.292px;width:26.173px;height:42.816px;rx:13.087px;ry:21.408px;transform:rotate(209.762deg)}
+  58.333%{x:-13.405px;y:-47.658px;width:26.084px;height:43.428px;rx:13.042px;ry:21.714px;transform:rotate(212.987deg)}
+  66.667%{x:-13.176px;y:-47.851px;width:26.037px;height:43.751px;rx:13.018px;ry:21.875px;transform:rotate(214.686deg)}
+  75%{x:-13.064px;y:-47.946px;width:26.013px;height:43.909px;rx:13.007px;ry:21.954px;transform:rotate(215.52deg)}
+  83.333%{x:-13.017px;y:-47.986px;width:26.003px;height:43.976px;rx:13.002px;ry:21.988px;transform:rotate(215.875deg)}
+  91.667%{x:-13.002px;y:-47.998px;width:26px;height:43.997px;rx:13px;ry:21.999px;transform:rotate(215.986deg)}
+  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(216deg)}
+}
+@keyframes ldBloom1{
+  0%{x:-42px;y:-12.5px;width:74px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
+  8.333%{x:-31.66px;y:-25.157px;width:56.886px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(102.684deg)}
+  16.667%{x:-23.709px;y:-34.891px;width:43.725px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(181.648deg)}
+  25%{x:-18.799px;y:-40.901px;width:35.598px;height:35.802px;rx:17.799px;ry:17.901px;transform:rotate(230.411deg)}
+  33.333%{x:-16.097px;y:-44.209px;width:31.126px;height:39.622px;rx:15.563px;ry:19.811px;transform:rotate(257.246deg)}
+  41.667%{x:-14.635px;y:-45.999px;width:28.706px;height:41.689px;rx:14.353px;ry:20.844px;transform:rotate(271.765deg)}
+  50%{x:-13.837px;y:-46.975px;width:27.386px;height:42.816px;rx:13.693px;ry:21.408px;transform:rotate(279.683deg)}
+  58.333%{x:-13.405px;y:-47.505px;width:26.67px;height:43.428px;rx:13.335px;ry:21.714px;transform:rotate(283.982deg)}
+  66.667%{x:-13.176px;y:-47.784px;width:26.292px;height:43.751px;rx:13.146px;ry:21.875px;transform:rotate(286.248deg)}
+  75%{x:-13.064px;y:-47.921px;width:26.107px;height:43.909px;rx:13.053px;ry:21.954px;transform:rotate(287.36deg)}
+  83.333%{x:-13.017px;y:-47.979px;width:26.028px;height:43.976px;rx:13.014px;ry:21.988px;transform:rotate(287.834deg)}
+  91.667%{x:-13.002px;y:-47.998px;width:26.003px;height:43.997px;rx:13.002px;ry:21.999px;transform:rotate(287.982deg)}
+  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(288deg)}
+}
+@keyframes ldBloom2{
+  0%{x:-42px;y:-1.5px;width:48px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
+  8.333%{x:-31.66px;y:-18.079px;width:40.156px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(0deg)}
+  16.667%{x:-23.709px;y:-30.829px;width:34.124px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(0deg)}
+  25%{x:-18.799px;y:-38.702px;width:30.399px;height:35.802px;rx:15.2px;ry:17.901px;transform:rotate(0deg)}
+  33.333%{x:-16.097px;y:-43.034px;width:28.349px;height:39.622px;rx:14.175px;ry:19.811px;transform:rotate(0deg)}
+  41.667%{x:-14.635px;y:-45.379px;width:27.24px;height:41.689px;rx:13.62px;ry:20.844px;transform:rotate(0deg)}
+  50%{x:-13.837px;y:-46.657px;width:26.635px;height:42.816px;rx:13.318px;ry:21.408px;transform:rotate(0deg)}
+  58.333%{x:-13.405px;y:-47.351px;width:26.307px;height:43.428px;rx:13.153px;ry:21.714px;transform:rotate(0deg)}
+  66.667%{x:-13.176px;y:-47.717px;width:26.134px;height:43.751px;rx:13.067px;ry:21.875px;transform:rotate(0deg)}
+  75%{x:-13.064px;y:-47.897px;width:26.049px;height:43.909px;rx:13.024px;ry:21.954px;transform:rotate(0deg)}
+  83.333%{x:-13.017px;y:-47.973px;width:26.013px;height:43.976px;rx:13.006px;ry:21.988px;transform:rotate(0deg)}
+  91.667%{x:-13.002px;y:-47.997px;width:26.001px;height:43.997px;rx:13.001px;ry:21.999px;transform:rotate(0deg)}
+  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(0deg)}
+}
+@keyframes ldBloom3{
+  0%{x:-42px;y:9.5px;width:66px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
+  8.333%{x:-31.66px;y:-11.001px;width:51.738px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(25.671deg)}
+  16.667%{x:-23.709px;y:-26.767px;width:40.771px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(45.412deg)}
+  25%{x:-18.799px;y:-36.502px;width:33.998px;height:35.802px;rx:16.999px;ry:17.901px;transform:rotate(57.603deg)}
+  33.333%{x:-16.097px;y:-41.86px;width:30.271px;height:39.622px;rx:15.136px;ry:19.811px;transform:rotate(64.311deg)}
+  41.667%{x:-14.635px;y:-44.759px;width:28.255px;height:41.689px;rx:14.127px;ry:20.844px;transform:rotate(67.941deg)}
+  50%{x:-13.837px;y:-46.339px;width:27.155px;height:42.816px;rx:13.578px;ry:21.408px;transform:rotate(69.921deg)}
+  58.333%{x:-13.405px;y:-47.198px;width:26.558px;height:43.428px;rx:13.279px;ry:21.714px;transform:rotate(70.996deg)}
+  66.667%{x:-13.176px;y:-47.65px;width:26.243px;height:43.751px;rx:13.122px;ry:21.875px;transform:rotate(71.562deg)}
+  75%{x:-13.064px;y:-47.872px;width:26.089px;height:43.909px;rx:13.044px;ry:21.954px;transform:rotate(71.84deg)}
+  83.333%{x:-13.017px;y:-47.967px;width:26.023px;height:43.976px;rx:13.012px;ry:21.988px;transform:rotate(71.958deg)}
+  91.667%{x:-13.002px;y:-47.996px;width:26.003px;height:43.997px;rx:13.001px;ry:21.999px;transform:rotate(71.995deg)}
+  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(72deg)}
+}
+@keyframes ldBloom4{
+  0%{x:-42px;y:20.5px;width:58px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
+  8.333%{x:-31.66px;y:-3.923px;width:46.591px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(51.342deg)}
+  16.667%{x:-23.709px;y:-22.705px;width:37.817px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(90.824deg)}
+  25%{x:-18.799px;y:-34.303px;width:32.399px;height:35.802px;rx:16.199px;ry:17.901px;transform:rotate(115.205deg)}
+  33.333%{x:-16.097px;y:-40.685px;width:29.417px;height:39.622px;rx:14.709px;ry:19.811px;transform:rotate(128.623deg)}
+  41.667%{x:-14.635px;y:-44.139px;width:27.804px;height:41.689px;rx:13.902px;ry:20.844px;transform:rotate(135.883deg)}
+  50%{x:-13.837px;y:-46.022px;width:26.924px;height:42.816px;rx:13.462px;ry:21.408px;transform:rotate(139.842deg)}
+  58.333%{x:-13.405px;y:-47.044px;width:26.446px;height:43.428px;rx:13.223px;ry:21.714px;transform:rotate(141.991deg)}
+  66.667%{x:-13.176px;y:-47.583px;width:26.195px;height:43.751px;rx:13.097px;ry:21.875px;transform:rotate(143.124deg)}
+  75%{x:-13.064px;y:-47.848px;width:26.071px;height:43.909px;rx:13.036px;ry:21.954px;transform:rotate(143.68deg)}
+  83.333%{x:-13.017px;y:-47.96px;width:26.018px;height:43.976px;rx:13.009px;ry:21.988px;transform:rotate(143.917deg)}
+  91.667%{x:-13.002px;y:-47.996px;width:26.002px;height:43.997px;rx:13.001px;ry:21.999px;transform:rotate(143.991deg)}
+  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(144deg)}
+}
+@keyframes ldFlash{from{fill:var(--acc)}to{fill:var(--cream)}}
+.ld-pet{fill:var(--cream);animation-duration:.58s,.52s;animation-timing-function:linear,ease-out;
+  animation-delay:var(--bd),var(--bd);animation-fill-mode:both,forwards}
+.ld-p0{animation-name:ldBloom0,ldFlash}
+.ld-p1{animation-name:ldBloom1,ldFlash}
+.ld-p2{animation-name:ldBloom2,ldFlash}
+.ld-p3{animation-name:ldBloom3,ldFlash}
+.ld-p4{animation-name:ldBloom4,ldFlash}
+
+/* the note is played at .77s: the stem retracts into the head (scaleY toward
+   the shared 0,0 origin, so it collapses downward), then the head opens into
+   the finished centre. One element throughout. */
+@keyframes ldStemOut{0%{transform:scaleY(1);opacity:1}40%{opacity:1}100%{transform:scaleY(0);opacity:0}}
+.ld-stem{animation:ldStemOut .34s var(--release) .77s both}
+@keyframes ldHeadGrow{0%{rx:5.6px;ry:4.3px;transform:rotate(-20deg) scale(1)}58%{rx:10px;ry:10px;transform:rotate(0deg) scale(1.18)}100%{rx:10px;ry:10px;transform:rotate(0deg) scale(1)}}
+.ld-nhead{animation:ldHeadGrow .42s var(--release) 1.14s both}
+/* `forwards` only + base opacity 0, else the backwards fill parks a stray
+   ring on screen for the whole first second */
+@keyframes ldRingOut{from{transform:scale(.2);opacity:.75}to{transform:scale(1.8);opacity:0}}
+.ld-ring{opacity:0;animation:ldRingOut .62s var(--release) 1.14s forwards}
+
+.ld-word{display:flex;flex-direction:column;align-items:center;gap:9px}
+.ld-name{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(30px,7vw,38px);line-height:1;
+  animation:ldRise .7s var(--release) 1.05s both}
+@keyframes ldRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.ld-sub{font:500 10px/1 'Geist Mono',ui-monospace,monospace;text-transform:uppercase;color:var(--dim);
+  animation:ldSpread .75s var(--release) 1.16s both}
+@keyframes ldSpread{from{opacity:0;letter-spacing:.03em}to{opacity:1;letter-spacing:.34em}}
+
+/* ============ MOBILE ============ */
+@media (max-width:860px){
+  :root{--gut:20px}
+  /* the instrument moves behind the copy and steps right back, so text
+     stays readable on a small screen instead of competing with strings */
+  #rig{opacity:.4}
+  #ruler{display:none}
+  /* on a phone the copy is full-width, so a full-width playhead rule would
+     draw a line straight through the headline. Compact it into a readout
+     pinned to the right edge instead. */
+  #head{justify-content:flex-end}
+  #head .rule{max-width:40px}
+  #head .tc{padding:0 8px;font-size:9px}
+  #snd{right:16px;bottom:16px}
+  #topbar .inner{padding:11px var(--gut)}
+  #topbar .wordmark span{font-size:17px}
+  /* drop the section links before they wrap the bar to two rows — the
+     Book pill must survive at every width, the links are expendable */
+  #topbar .links{display:none}
+  #topbar .book{padding:10px 16px;font-size:13px}
+  html{scroll-padding-top:62px}
+  #intro,.chapter{padding-left:var(--gut);padding-right:var(--gut)}
+  #intro h1{font-size:clamp(36px,10vw,54px);max-width:none}
+  .chapter{padding-top:16vh;padding-bottom:16vh}
+  .chapter h2{font-size:clamp(28px,8vw,40px)}
+  .copy{max-width:none}
+  /* a scrim so strings never sit directly under running text */
+  .copy,#intro > *{position:relative}
+  .g-two{gap:28px}
+  .portrait{order:-1}
+  .track{padding:16px}
+  .rate{padding:22px}
+  footer{flex-direction:column;align-items:flex-start;gap:10px}
+}
+@media (max-width:400px){
+  #intro h1{font-size:32px}
+  .chapter h2{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;scroll-snap-type:none}
+  [data-reveal]{opacity:1;transform:none;transition:none}
+  .scrollcue{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="loader" aria-hidden="true">
+  <svg viewBox="-50 -50 100 100" style="width:min(210px,52vw);height:min(210px,52vw)">
+    <g class="ld-bar" style="--in:0s"><rect class="ld-pet ld-p0" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.70s"/></g>
+    <g class="ld-bar" style="--in:.05s"><rect class="ld-pet ld-p1" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.99s"/></g>
+    <g class="ld-bar" style="--in:.10s"><rect class="ld-pet ld-p2" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.81s"/></g>
+    <g class="ld-bar" style="--in:.15s"><rect class="ld-pet ld-p3" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.93s"/></g>
+    <g class="ld-bar" style="--in:.20s"><rect class="ld-pet ld-p4" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.88s"/></g>
+    <rect class="ld-head" x="-0.55" y="-31" width="1.1" height="62" rx=".55" fill="#E9C846"/>
+    <circle class="ld-ring" r="26" fill="none" stroke="#E9C846" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    <rect class="ld-stem" x="3.863" y="-19.2" width="1.6" height="18.44" rx=".8" fill="#E9C846"/>
+    <ellipse class="ld-nhead" rx="10" ry="10" fill="#E9C846"/>
+  </svg>
+  <div class="ld-word">
+    <div class="ld-name">Yasmin Eden</div>
+    <div class="ld-sub">Sound</div>
+  </div>
+</div>
+<script>
+(function(){
+  var el = document.getElementById('loader');
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var seen = sessionStorage.getItem('ye-loader-seen');
+  function hide(){
+    el.style.opacity = '0'; el.style.visibility = 'hidden'; el.style.pointerEvents = 'none';
+    document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+  }
+  if (reduced || seen){ el.style.transition = 'none'; hide(); return; }
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  // 2050ms: the wordmark finishes at ~1.91s, then a 700ms fade
+  setTimeout(function(){ hide(); sessionStorage.setItem('ye-loader-seen','1'); }, 2050);
+})();
+</script>
+
+<div id="rig" aria-hidden="true"><svg id="stage" preserveAspectRatio="none"></svg></div>
+<div id="head" aria-hidden="true"><span class="rule"></span><span class="tc" id="tc">00:00</span><span class="rule"></span></div>
+<nav id="ruler" aria-hidden="true"></nav>
+
+<header id="topbar">
+  <div class="inner">
+    <a class="wordmark" href="#intro">
+      <svg id="knob" viewBox="-50 -50 100 100" style="width:22px;height:22px;flex:none;transition:transform .18s linear" aria-hidden="true">
+        <g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
+        <circle r="10" fill="#E9C846"/>
+      </svg>
+      <span>Yasmin Eden</span>
+    </a>
+    <div class="right">
+      <nav class="links">
+        <a href="#work">Work</a>
+        <a href="#about">About</a>
+        <a href="#rates">Rates</a>
+      </nav>
+      <a class="book" href="#book">Book a session</a>
+    </div>
+  </div>
+</header>
+
+<button id="snd" aria-pressed="false">Sound off</button>
+
+<main>
+  <section id="intro">
+    <span class="eyebrow">Mixing · Mastering · Recording</span>
+    <h1>I've been making this record my whole life.</h1>
+    <p class="sub">I'm Yasmin — an independent engineer working with bands and solo artists. Scroll to play it: every line below is a part I learned to hear.</p>
+    <span class="scrollcue">Scroll ↓</span>
+  </section>
+
+  <section class="chapter"><div class="copy" data-reveal>
+    <span class="kicker">01 · The bedroom</span>
+    <h2>I made the first record in my bedroom.</h2>
+    <p>I wrote, played and produced my first album in my room at my parents' house. No studio, no booth, no budget — one room and whatever I could get a microphone in front of.</p>
+    <p class="ph">[The record's name, the year, and what you recorded it on.]</p>
+  </div></section>
+
+  <section class="chapter"><div class="copy" data-reveal>
+    <span class="kicker">02 · Paying for it</span>
+    <h2>Piano lessons paid for it.</h2>
+    <p>I taught piano to fund the work. Every hour at someone else's keyboard bought another hour at my own — and it's where the patience for other people's records came from.</p>
+  </div></section>
+
+  <section class="chapter"><div class="copy" data-reveal>
+    <span class="kicker">03 · Leaving</span>
+    <h2>Then I left everyone I knew.</h2>
+    <p>It wasn't going to happen where I was. So I went — abroad, on my own, to study music properly.</p>
+    <p class="ph">[One line on the decision: where you left, who you left, what it cost.]</p>
+  </div></section>
+
+  <section class="chapter"><div class="copy" data-reveal>
+    <span class="kicker">04 · The Hague</span>
+    <h2>The Royal Conservatoire, The Hague.</h2>
+    <p>I'm finishing my degree in sound there now — the formal half of an ear that had already been working for years.</p>
+  </div></section>
+
+  <section class="chapter"><div class="copy" data-reveal>
+    <span class="kicker">05 · The choir</span>
+    <h2>I conduct a choir.</h2>
+    <p>Standing in front of a room of singers and making them arrive together is the same job as a mix: balance, blend, and knowing who to bring forward.</p>
+    <p class="ph">[Which choir, how many voices, how long.]</p>
+  </div></section>
+
+  <section class="chapter"><div class="copy" data-reveal>
+    <span class="kicker">06 · Six strings</span>
+    <h2>And I still teach.</h2>
+    <p>Guitar now, as well as piano. Teaching keeps my ear honest — you can't explain a sound you don't actually understand.</p>
+  </div></section>
+
+  <section class="chapter"><div class="copy" data-reveal>
+    <span class="kicker">07 · Now</span>
+    <h2>All of it ends up in the mix.</h2>
+    <p>Bedroom producer, teacher, conductor, engineer. It's why a record I finish sounds like the room it was made in — and like the people who made it.</p>
+  </div></section>
+
+  <!-- ============ act II: the work ============ -->
+  <section class="act2" id="work">
+    <div class="head2" data-reveal><span class="num">01</span><h2>Selected work</h2></div>
+    <p class="lede" data-reveal>Three records from the last year. Press play — the meter is reading the actual audio, not a decoration.</p>
+    <div class="grid g-work">
+      <article class="track" data-reveal data-src="assets/track-1.mp3">
+        <div class="row">
+          <div><div class="ttl">[Track title]</div><div class="cred">[Artist] · Mix &amp; Master</div></div>
+          <div class="state">Idle</div>
+        </div>
+        <canvas height="88" aria-hidden="true"></canvas>
+        <div class="ctl">
+          <button class="play" aria-label="Play [Track title]"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>
+          <span class="time">0:00</span>
+        </div>
+      </article>
+      <article class="track" data-reveal data-src="assets/track-2.mp3">
+        <div class="row">
+          <div><div class="ttl">[Track title]</div><div class="cred">[Artist] · Mix</div></div>
+          <div class="state">Idle</div>
+        </div>
+        <canvas height="88" aria-hidden="true"></canvas>
+        <div class="ctl">
+          <button class="play" aria-label="Play [Track title]"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>
+          <span class="time">0:00</span>
+        </div>
+      </article>
+      <article class="track" data-reveal data-src="assets/track-3.mp3">
+        <div class="row">
+          <div><div class="ttl">[Track title]</div><div class="cred">[Artist] · Recording &amp; Mix</div></div>
+          <div class="state">Idle</div>
+        </div>
+        <canvas height="88" aria-hidden="true"></canvas>
+        <div class="ctl">
+          <button class="play" aria-label="Play [Track title]"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></button>
+          <span class="time">0:00</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <div class="band"><section class="act2" id="about">
+    <div class="grid g-two">
+      <div class="portrait" data-reveal>
+        <img src="design_handoff_yasmin_eden_sound/assets/yasmin-desk.png" width="608" height="404"
+             alt="Yasmin Eden at the mixing desk">
+      </div>
+      <div>
+        <div class="head2" data-reveal><span class="num">02</span><h2>At the desk</h2></div>
+        <p class="lede" data-reveal style="margin-bottom:18px;color:var(--body);font-size:17px;line-height:1.68">
+          I mix and master from [city], and record on location when a room is worth capturing. I like records that keep the room in them — the chair creak, the breath before the line, the sound of four people playing at once.</p>
+        <dl class="stats" data-reveal>
+          <div><dt>Based in</dt><dd>[The Hague]</dd></div>
+          <div><dt>Working since</dt><dd>[20XX]</dd></div>
+          <div><dt>Records finished</dt><dd>[XX]</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section></div>
+
+  <section class="act2" id="rates">
+    <div class="head2" data-reveal><span class="num">03</span><h2>Services &amp; rates</h2></div>
+    <p class="lede" data-reveal>Starting points, not final numbers. What it actually costs depends on track count, the state of the stems and how much revision you want — you'll get a fixed quote before anything begins.</p>
+    <div class="grid g-rates">
+      <div class="rate" data-reveal>
+        <h3>Mixing</h3>
+        <div class="price"><span class="from">from</span><span class="fig">$[XXX]</span><span class="unit">/ song</span></div>
+        <ul><li>Stems cleaned and balanced</li><li>Two rounds of revisions</li><li>Stereo master included</li><li>Instrumental &amp; vocal-up versions</li></ul>
+      </div>
+      <div class="rate" data-reveal>
+        <h3>Mastering</h3>
+        <div class="price"><span class="from">from</span><span class="fig">$[XX]</span><span class="unit">/ song</span></div>
+        <ul><li>Streaming and CD targets</li><li>One round of revisions</li><li>Sequencing and spacing</li><li>DDP or WAV delivery</li></ul>
+      </div>
+      <div class="rate lead" data-reveal>
+        <h3>Recording</h3>
+        <div class="price"><span class="from">from</span><span class="fig">$[XXX]</span><span class="unit">/ day</span></div>
+        <ul><li>Location or studio</li><li>Engineer and setup included</li><li>Rough mixes same week</li><li>Full session files delivered</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="band"><section class="act2" id="book">
+    <div class="grid g-two" style="align-items:start">
+      <div>
+        <div class="head2" data-reveal><span class="num">04</span><h2>Book a session</h2></div>
+        <p data-reveal style="color:var(--body);font-size:17px;line-height:1.65;max-width:40ch;margin-bottom:22px">
+          Tell me about the record and I'll come back within two working days with a quote and some dates.</p>
+        <div class="contact" data-reveal>
+          <a href="mailto:[hello@example.com]"><span class="lbl">Email</span><span>[hello@example.com]</span></a>
+          <a href="https://wa.me/[NUMBER]"><span class="lbl">WhatsApp</span><span>[+00 000 0000]</span></a>
+          <a href="https://instagram.com/[handle]"><span class="lbl">Instagram</span><span>[@handle]</span></a>
+        </div>
+      </div>
+      <form data-reveal action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <label><span class="cap">Name</span><input name="name" type="text" required></label>
+        <label><span class="cap">Email</span><input name="email" type="email" required></label>
+        <label><span class="cap">About the record</span><textarea name="message" rows="5" required></textarea></label>
+        <button class="solid" type="submit">Send it over</button>
+        <span class="note-sm">Replace YOUR_FORM_ID with the real Formspree endpoint, then delete this line.</span>
+      </form>
+    </div>
+  </section></div>
+</main>
+
+<footer>
+  <span class="left">
+    <svg viewBox="-50 -50 100 100" style="width:17px;height:17px" aria-hidden="true">
+      <g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
+      <circle r="10" fill="#E9C846"/>
+    </svg>
+    Yasmin Eden Sound
+  </span>
+  <span class="right">© [Year] · [City]</span>
+</footer>
+
+<script>
+(() => {
+'use strict';
+const SVGNS = 'http://www.w3.org/2000/svg';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mob = () => innerWidth <= 860;
+
+/* The number of strings IS the biography: one voice alone in a bedroom,
+   two while teaching piano, five as a staff at the conservatoire, four
+   voices for the choir, six for guitar, then all of it into the mark. */
+const CH = [
+  { count:1, spread:0.00, amp:11, freq:.013, drift:.9,  scale:[220.00,261.63,293.66,329.63,392.00] },
+  { count:2, spread:0.13, amp:5,  freq:.016, drift:.35, scale:[261.63,293.66,349.23,392.00,440.00] },
+  { count:2, spread:0.40, amp:16, freq:.008, drift:.6,  scale:[246.94,293.66,349.23,392.00,440.00] },
+  { count:5, spread:0.30, amp:0,  freq:.010, drift:0,   scale:[261.63,311.13,349.23,392.00,466.16] },
+  { count:4, spread:0.26, amp:13, freq:.006, drift:.15, scale:[196.00,246.94,293.66,392.00] },
+  // real open-string pitches: E2 A2 D3 G3 B3 E4
+  { count:6, spread:0.40, amp:0,  freq:.010, drift:0,   scale:[82.41,110.00,146.83,196.00,246.94,329.63] },
+  { count:5, spread:0.20, amp:3,  freq:.011, drift:.1,  scale:[293.66,349.23,440.00,523.25,587.33] },
+];
+const SLOTS = 6, LAST = CH.length - 1;
+
+const stage = document.getElementById('stage');
+const headEl = document.getElementById('head');
+const rig = document.getElementById('rig');
+const strings = [];
+for (let s = 0; s < SLOTS; s++){
+  const p = document.createElementNS(SVGNS, 'path');
+  p.setAttribute('class', 'string');
+  stage.appendChild(p);
+  strings.push({ el:p, vib:0, x:0 });
+}
+const noteLayer = document.createElementNS(SVGNS, 'g');
+stage.appendChild(noteLayer);
+
+const mark = document.createElementNS(SVGNS, 'g');
+mark.setAttribute('opacity', '0');
+for (const r of [0,72,144,216,288]){
+  const e = document.createElementNS(SVGNS, 'ellipse');
+  e.setAttribute('class','mark-petal');
+  e.setAttribute('rx',13); e.setAttribute('ry',22); e.setAttribute('cy',-26);
+  e.setAttribute('transform', `rotate(${r})`);
+  mark.appendChild(e);
+}
+const core = document.createElementNS(SVGNS,'circle');
+core.setAttribute('class','mark-core'); core.setAttribute('r',10);
+mark.appendChild(core);
+stage.appendChild(mark);
+
+const ruler = document.getElementById('ruler');
+const ticks = CH.map((c,i) => {
+  const d = document.createElement('div');
+  d.className = 'tick'; d.textContent = String(i+1).padStart(2,'0');
+  ruler.appendChild(d); return d;
+});
+
+/* ---------------- audio ---------------- */
+let actx = null, dry = null, soundOn = false;
+function initAudio(){
+  if (actx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  actx = new AC();
+  const len = Math.floor(actx.sampleRate * 2.0);
+  const ir = actx.createBuffer(2, len, actx.sampleRate);
+  for (let c = 0; c < 2; c++){
+    const d = ir.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.8);
+  }
+  const conv = actx.createConvolver(); conv.buffer = ir;
+  const wet = actx.createGain(); wet.gain.value = .20;
+  dry = actx.createGain(); dry.gain.value = .16;
+  dry.connect(actx.destination);
+  conv.connect(wet); wet.connect(actx.destination);
+  dry.__conv = conv;
+}
+function pluck(freq, gain){
+  if (!soundOn || !actx || actx.state !== 'running') return;
+  const t0 = actx.currentTime, decay = 1.5;
+  const env = actx.createGain();
+  env.gain.setValueAtTime(.0001, t0);
+  env.gain.exponentialRampToValueAtTime(gain, t0 + .006);
+  env.gain.exponentialRampToValueAtTime(.0001, t0 + decay);
+  env.connect(dry); env.connect(dry.__conv);
+  [1,2,3].forEach((p,i) => {
+    const o = actx.createOscillator();
+    o.type = i === 0 ? 'sine' : 'triangle';
+    o.frequency.value = freq * p;
+    const g = actx.createGain(); g.gain.value = 1/(p*p*1.7);
+    o.connect(g); g.connect(env);
+    o.start(t0); o.stop(t0 + decay + .05);
+  });
+}
+const sndBtn = document.getElementById('snd');
+sndBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  sndBtn.textContent = soundOn ? 'Sound on' : 'Sound off';
+  sndBtn.setAttribute('aria-pressed', String(soundOn));
+  if (soundOn){ initAudio(); if (actx.state === 'suspended') actx.resume(); }
+});
+
+/* ---------------- reveals ---------------- */
+const io = 'IntersectionObserver' in window
+  ? new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    }), {rootMargin:'0px 0px -10% 0px', threshold:.08})
+  : null;
+document.querySelectorAll('[data-reveal]').forEach(el => io ? io.observe(el) : el.classList.add('in'));
+setTimeout(() => document.querySelectorAll('[data-reveal]').forEach(el => el.classList.add('in')), 3500);
+
+/* ---------------- players: real analysis, no faking ---------------- */
+let playingCard = null;
+const players = [...document.querySelectorAll('.track')].map(card => {
+  const cv = card.querySelector('canvas');
+  const btn = card.querySelector('.play');
+  const timeEl = card.querySelector('.time');
+  const stateEl = card.querySelector('.state');
+  const audio = new Audio();
+  audio.preload = 'none';
+  audio.crossOrigin = 'anonymous';
+  audio.src = card.dataset.src;
+  const P = { card, cv, ctx2d: cv.getContext('2d'), btn, timeEl, stateEl, audio,
+              an:null, bins:null, ok:true };
+
+  audio.addEventListener('error', () => {
+    P.ok = false; btn.disabled = true; stateEl.textContent = 'No file';
+    if (!card.querySelector('.missing')){
+      const m = document.createElement('span');
+      m.className = 'missing';
+      m.textContent = 'Drop the mp3 at ' + card.dataset.src;
+      card.querySelector('.ctl').appendChild(m);
+    }
+  });
+  audio.addEventListener('timeupdate', () => {
+    const s = Math.floor(audio.currentTime);
+    timeEl.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+  });
+  audio.addEventListener('ended', () => stop(P));
+
+  btn.addEventListener('click', () => {
+    if (!P.ok) return;
+    if (playingCard === P){ stop(P); return; }
+    if (playingCard) stop(playingCard);
+    initAudio();
+    if (actx && actx.state === 'suspended') actx.resume();
+    if (actx && !P.an){
+      P.an = actx.createAnalyser();
+      P.an.fftSize = 256; P.an.smoothingTimeConstant = .78;
+      P.bins = new Uint8Array(P.an.frequencyBinCount);
+      actx.createMediaElementSource(audio).connect(P.an);
+      P.an.connect(actx.destination);
+    }
+    audio.play().then(() => {
+      playingCard = P; card.classList.add('playing'); stateEl.textContent = 'Playing';
+    }).catch(() => { P.ok = false; btn.disabled = true; stateEl.textContent = 'No file'; });
+  });
+  return P;
+});
+function stop(P){
+  P.audio.pause();
+  P.card.classList.remove('playing');
+  P.stateEl.textContent = 'Idle';
+  if (playingCard === P) playingCard = null;
+}
+function drawMeters(){
+  for (const P of players){
+    const { cv, ctx2d } = P;
+    const w = cv.clientWidth, h = 88;
+    if (cv.width !== w) cv.width = w;
+    ctx2d.clearRect(0, 0, w, h);
+    const N = 30, gap = 3, bw = (w - gap*(N-1)) / N;
+    const live = playingCard === P && P.an;
+    if (live) P.an.getByteFrequencyData(P.bins);
+    for (let i = 0; i < N; i++){
+      // log-ish frequency mapping — a real spectrum falls left to right
+      const idx = Math.floor(Math.pow(i / N, 1.7) * P_binCount(P));
+      const v = live ? P.bins[idx] / 255 : 0.045;
+      const bh = Math.max(2, v * h);
+      ctx2d.fillStyle = live ? '#E9C846' : 'rgba(242,237,225,.16)';
+      ctx2d.fillRect(i * (bw + gap), h - bh, bw, bh);
+    }
+  }
+}
+function P_binCount(P){ return P.an ? P.an.frequencyBinCount : 128; }
+
+/* ---------------- journey metrics ---------------- */
+let jTop = 0, jLen = 1, actEnd = 0, copyRight = 0;
+function metrics(){
+  const chs = document.querySelectorAll('.chapter');
+  const first = document.getElementById('intro');
+  const last = chs[chs.length - 1];
+  jTop = first.offsetTop;
+  jLen = Math.max(1, (last.offsetTop + last.offsetHeight) - jTop);
+  actEnd = last.offsetTop + last.offsetHeight;
+  // right edge of the widest text block, so the transport never draws
+  // a rule straight through the headline
+  copyRight = 0;
+  document.querySelectorAll('#intro h1, #intro .sub, .copy').forEach(el => {
+    const r = el.getBoundingClientRect();
+    if (r.width) copyRight = Math.max(copyRight, r.right);
+  });
+}
+addEventListener('resize', metrics, {passive:true});
+addEventListener('load', metrics);
+metrics();
+
+/* ---------------- loop ---------------- */
+let scrollY = window.scrollY, lastY = scrollY, delta = 0;
+addEventListener('scroll', () => { scrollY = window.scrollY; }, {passive:true});
+
+const notes = [];
+let sinceSpawn = 0;
+const SPAWN_PX = 190;
+const lerp = (a,b,t) => a + (b-a)*t;
+let t0 = performance.now();
+
+function frame(now){
+  const dt = Math.min(48, now - t0); t0 = now;
+  const W = innerWidth, H = innerHeight;
+  const headY = H * (mob() ? 0.42 : 0.46);
+  stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  delta = scrollY - lastY; lastY = scrollY;
+
+  // progress through the journey, measured off the real sections
+  // 0 at the very top, 1 when the last chapter has been read
+  const p = Math.min(1, Math.max(0, (scrollY - jTop) / Math.max(1, jLen - H)));
+  const t = p * LAST;
+  const i = Math.min(LAST-1, Math.floor(t));
+  const f = Math.min(1, Math.max(0, t - i));
+  const A = CH[i], B = CH[Math.min(LAST, i+1)];
+  const activeCh = Math.round(t);
+
+  // once the journey is over the instrument retires so the commercial
+  // half of the page can be read without strings running through it
+  const past = scrollY > actEnd - H*0.5;
+  rig.style.opacity = past ? (mob() ? '.12' : '.16') : (mob() ? '.4' : '1');
+  headEl.style.display = past ? 'none' : 'flex';
+  ruler.style.opacity = past ? '0' : '1';
+
+  const secs = Math.floor(p * LAST * 60);
+  document.getElementById('tc').textContent =
+    String(Math.floor(secs/60)).padStart(2,'0') + ':' + String(secs%60).padStart(2,'0');
+  ticks.forEach((d,k) => d.classList.toggle('on', k === activeCh));
+
+  const count = lerp(A.count,B.count,f), spread = lerp(A.spread,B.spread,f);
+  const amp = lerp(A.amp,B.amp,f), freq = lerp(A.freq,B.freq,f), drift = lerp(A.drift,B.drift,f);
+  const cx = W * (mob() ? 0.5 : 0.68);
+  const band = Math.min(W * (mob() ? 0.82 : 0.52), 520);
+
+  // the transport is exactly as wide as the instrument currently is, and
+  // on desktop it starts clear of the copy column
+  const hw = Math.max(120, spread * band + 96);
+  const hLeft = mob() ? W - 178 : Math.max(cx - hw, copyRight + 36);
+  headEl.style.top = (headY - 6) + 'px';
+  headEl.style.left = hLeft + 'px';
+  headEl.style.width = mob()
+    ? '164px'
+    : Math.max(140, Math.min(cx + hw, W - 62) - hLeft) + 'px';
+
+  const endMix = Math.min(1, Math.max(0, (t - (LAST - 0.55)) / 0.55));
+  headEl.style.opacity = (1 - endMix*0.9).toFixed(3);
+
+  for (let s = 0; s < SLOTS; s++){
+    const st = strings[s];
+    const slotPos = c => (c <= 1 ? 0 : (Math.min(s, c-1)/(c-1))*2 - 1);
+    const pos = lerp(s < A.count ? slotPos(A.count) : 0, s < B.count ? slotPos(B.count) : 0, f);
+    const op  = lerp(s < A.count ? 1 : 0, s < B.count ? 1 : 0, f) * (1 - endMix);
+    st.x = cx + pos * spread * band;
+    st.vib *= Math.pow(0.955, dt/16.7);
+    if (op < 0.01){ st.el.setAttribute('opacity','0'); continue; }
+    let d = '';
+    for (let y = -24; y <= H+24; y += 16){
+      const wob = reduced ? 0 : amp * Math.sin(y*freq + s*0.8 + now*0.0004*drift);
+      const tw  = reduced ? 0 : st.vib * 15 * Math.sin((y-headY)*0.022) * Math.exp(-Math.abs(y-headY)/340);
+      d += (d ? 'L' : 'M') + (st.x + wob + tw).toFixed(1) + ' ' + y + ' ';
+    }
+    st.el.setAttribute('d', d);
+    st.el.setAttribute('opacity', (op * (0.40 + 0.50*st.vib + (amp ? 0 : 0.10))).toFixed(3));
+  }
+
+  if (!reduced && delta > 0 && endMix < 1 && !past){
+    sinceSpawn += delta;
+    if (sinceSpawn > SPAWN_PX){
+      sinceSpawn = 0;
+      const c = CH[activeCh];
+      const slot = Math.floor(Math.random() * c.count);
+      const el = document.createElementNS(SVGNS,'circle');
+      el.setAttribute('class','note'); el.setAttribute('r', mob() ? 4 : 4.5);
+      noteLayer.appendChild(el);
+      notes.push({ slot, y:-30, el, freq:c.scale[slot % c.scale.length] });
+    }
+  }
+  for (let n = notes.length-1; n >= 0; n--){
+    const note = notes[n], prevY = note.y;
+    note.y += delta;
+    const st = strings[note.slot] || strings[0];
+    note.el.setAttribute('cx', st.x.toFixed(1));
+    note.el.setAttribute('cy', note.y.toFixed(1));
+    note.el.setAttribute('opacity',
+      (Math.min(1, note.y/90) * Math.min(1, (H-note.y)/120)).toFixed(2));
+    if (prevY < headY && note.y >= headY){ st.vib = 1; pluck(note.freq, .42); }
+    if (note.y > H+40 || note.y < -80){ note.el.remove(); notes.splice(n,1); }
+  }
+
+  if (endMix > 0.001 && !past){
+    // the mark spans 96 user units tip-to-tip
+    const sc = (Math.min(W,H) * (mob() ? .34 : .30) / 96) * (0.82 + 0.18*endMix);
+    mark.setAttribute('opacity', endMix.toFixed(3));
+    mark.setAttribute('transform', `translate(${cx} ${headY}) scale(${sc.toFixed(3)})`);
+  } else mark.setAttribute('opacity','0');
+
+  // the nav mark doubles as a scroll indicator: a quarter turn top to bottom
+  const knob = document.getElementById('knob');
+  if (knob){
+    const docP = scrollY / Math.max(1, document.documentElement.scrollHeight - H);
+    knob.style.transform = 'rotate(' + (docP * 90).toFixed(2) + 'deg)';
+  }
+
+  drawMeters();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

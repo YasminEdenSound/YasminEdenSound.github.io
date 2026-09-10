@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yasmin Eden — the journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12110E; --cream:#F2EDE1; --body:#CFC9BC; --dim:#9A9384; --acc:#E9C846;
+  --release:cubic-bezier(.22,1,.28,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+  background:var(--ink);color:var(--cream);
+  font-family:'Instrument Sans',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- the fixed instrument: strings + playhead ---------- */
+#rig{position:fixed;inset:0;z-index:1;pointer-events:none}
+#rig svg{width:100%;height:100%;display:block}
+.string{fill:none;stroke:var(--cream);stroke-width:1.25;stroke-linecap:round}
+.note{fill:var(--acc)}
+.ring{fill:none;stroke:var(--acc);stroke-width:1.5}
+.mark-petal{fill:var(--cream)}
+.mark-core{fill:var(--acc)}
+
+/* playhead */
+/* left/width are set from JS so the playhead spans only the instrument
+   band — a full-width rule slices straight through the headline. */
+#head{position:fixed;z-index:2;pointer-events:none;display:flex;align-items:center;gap:0}
+#head .rule{flex:1;height:1px;background:linear-gradient(90deg,
+      rgba(233,200,70,0) 0%, rgba(233,200,70,.55) 12%, rgba(233,200,70,.55) 88%, rgba(233,200,70,0) 100%)}
+#head .tc{
+  font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.18em;
+  color:var(--acc);padding:0 14px;white-space:nowrap;
+}
+
+/* ---------- transport ruler, right edge ---------- */
+#ruler{position:fixed;top:0;right:0;bottom:0;width:54px;z-index:3;pointer-events:none;
+       display:flex;flex-direction:column;justify-content:center;gap:0}
+#ruler .tick{
+  position:relative;flex:1;display:flex;align-items:center;justify-content:flex-end;
+  padding-right:14px;
+  font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
+  color:var(--dim);opacity:.5;transition:opacity .3s,color .3s;
+}
+#ruler .tick::after{
+  content:'';position:absolute;right:0;top:50%;width:7px;height:1px;background:currentColor;
+}
+#ruler .tick.on{opacity:1;color:var(--acc)}
+
+/* ---------- chapters ---------- */
+main{position:relative;z-index:4}
+.chapter{
+  min-height:100vh;min-height:100svh;
+  display:flex;align-items:center;
+  padding:12vh 28px;
+  max-width:1180px;margin:0 auto;
+}
+.copy{max-width:44ch;padding-right:24px}
+.kicker{
+  font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--acc);margin-bottom:18px;display:block;
+}
+.chapter h2{
+  font-family:'Instrument Serif',Georgia,serif;font-weight:400;
+  font-size:clamp(34px,5.4vw,62px);line-height:1.02;letter-spacing:-.012em;
+  text-wrap:balance;margin-bottom:22px;
+}
+.chapter p{font-size:clamp(16px,1.5vw,18px);line-height:1.68;color:var(--body);text-wrap:pretty}
+.chapter p + p{margin-top:15px}
+.ph{color:var(--dim)}
+
+/* reveal — fast attack, long release, matching the rest of the identity */
+.copy{opacity:0;transform:translateY(18px);
+      transition:opacity .55s ease, transform .8s var(--release)}
+.copy.in{opacity:1;transform:none}
+
+/* intro + outro */
+#intro,#outro{
+  min-height:100vh;min-height:100svh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:22px;text-align:center;padding:0 28px;
+}
+#intro h1{
+  font-family:'Instrument Serif',Georgia,serif;font-weight:400;
+  font-size:clamp(44px,8vw,96px);line-height:.98;letter-spacing:-.015em;max-width:16ch;
+  text-wrap:balance;
+}
+#intro .sub{font-size:clamp(15px,1.5vw,18px);line-height:1.6;color:var(--body);max-width:40ch}
+#intro .scrollcue{
+  font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim);margin-top:20px;
+  animation:bob 2.4s ease-in-out infinite;
+}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(5px);opacity:1}}
+#outro h2{
+  font-family:'Instrument Serif',Georgia,serif;font-weight:400;
+  font-size:clamp(32px,5vw,54px);line-height:1.05;max-width:18ch;text-wrap:balance;
+}
+#outro .cta{
+  margin-top:8px;padding:14px 26px;background:var(--acc);color:var(--ink);
+  border-radius:999px;font-size:15px;font-weight:600;
+  transition:transform .15s var(--release), box-shadow .15s ease;
+}
+#outro .cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(233,200,70,.24)}
+
+/* ---------- sound toggle ---------- */
+#snd{
+  position:fixed;right:68px;bottom:20px;z-index:20;   /* clear of the copy column */
+  font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--acc);background:rgba(18,17,14,.7);backdrop-filter:blur(8px);
+  border:1px solid rgba(233,200,70,.45);border-radius:999px;padding:9px 16px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+#snd:hover,#snd[aria-pressed="true"]{background:var(--acc);color:var(--ink)}
+#snd:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+
+@media (max-width:860px){
+  .copy{max-width:none;padding-right:0}
+  #ruler{display:none}
+  .chapter{padding:12vh 24px}
+  #snd{right:20px}
+}
+@media (prefers-reduced-motion:reduce){
+  .copy{opacity:1;transform:none;transition:none}
+  #intro .scrollcue{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="rig" aria-hidden="true">
+  <svg id="stage" preserveAspectRatio="none"></svg>
+</div>
+
+<div id="head" aria-hidden="true">
+  <span class="rule"></span>
+  <span class="tc" id="tc">00:00</span>
+  <span class="rule"></span>
+</div>
+
+<nav id="ruler" aria-hidden="true"></nav>
+
+<button id="snd" aria-pressed="false">Sound off</button>
+
+<main>
+  <section id="intro">
+    <h1>She has been making this record her whole life.</h1>
+    <p class="sub">Scroll to play it. Every line is a part she learned to hear.</p>
+    <span class="scrollcue">Scroll ↓</span>
+  </section>
+
+  <section class="chapter" data-ch="0"><div class="copy">
+    <span class="kicker">01 · The bedroom</span>
+    <h2>One take, one room, one pair of hands.</h2>
+    <p>The first album was written, played and produced in her room at her parents' house. No studio, no booth, no budget — one room and whatever she could get a microphone in front of.</p>
+    <p class="ph">[One concrete detail: the record's name, the year, what she recorded it on.]</p>
+  </div></section>
+
+  <section class="chapter" data-ch="1"><div class="copy">
+    <span class="kicker">02 · Paying for it</span>
+    <h2>Piano lessons bought the studio time.</h2>
+    <p>She taught piano to fund the work. Every hour spent at someone else's keyboard bought another hour at her own — which is where the patience for other people's records comes from.</p>
+  </div></section>
+
+  <section class="chapter" data-ch="2"><div class="copy">
+    <span class="kicker">03 · Leaving</span>
+    <h2>Then she left everyone she knew.</h2>
+    <p>Music was not going to happen at home. So she went — abroad, alone, to study it properly.</p>
+    <p class="ph">[One line on the decision: where she left, who she left, what it cost.]</p>
+  </div></section>
+
+  <section class="chapter" data-ch="3"><div class="copy">
+    <span class="kicker">04 · The Hague</span>
+    <h2>The Royal Conservatoire, and a degree in sound.</h2>
+    <p>She is finishing her sound degree at the Royal Conservatoire in The Hague — the formal half of an ear that had already been working for years.</p>
+  </div></section>
+
+  <section class="chapter" data-ch="4"><div class="copy">
+    <span class="kicker">05 · The choir</span>
+    <h2>Four voices, one instrument.</h2>
+    <p>She conducts a choir. Standing in front of a room of singers and making them arrive together is the same job as a mix: balance, blend, and knowing who to bring forward.</p>
+    <p class="ph">[Which choir, how many voices, how long.]</p>
+  </div></section>
+
+  <section class="chapter" data-ch="5"><div class="copy">
+    <span class="kicker">06 · Six strings</span>
+    <h2>And she still teaches.</h2>
+    <p>Guitar, now, as well as piano. Teaching keeps the ear honest — you cannot explain a sound you do not actually understand.</p>
+  </div></section>
+
+  <section class="chapter" data-ch="6"><div class="copy">
+    <span class="kicker">07 · Now</span>
+    <h2>Every part of that is in the mix.</h2>
+    <p>Bedroom producer, teacher, conductor, engineer. It is why a record she finishes sounds like the room it was made in — and like the people who made it.</p>
+  </div></section>
+
+  <section id="outro">
+    <h2>Send her the demos.</h2>
+    <a class="cta" href="#book">Book a session</a>
+  </section>
+</main>
+
+<script>
+(() => {
+'use strict';
+const SVGNS = 'http://www.w3.org/2000/svg';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ------------------------------------------------------------------ *
+ * Chapters. `count` is how many strings are sounding — the number
+ * tracks her musical life, so the instrument itself is the biography.
+ * `amp`/`freq` shape the line: wobbly for a bedroom recording, dead
+ * straight for a conservatoire staff, slow and out of phase for voices.
+ * `scale` is what a note on that string actually plays.
+ * ------------------------------------------------------------------ */
+const CH = [
+  { label:'BEDROOM', count:1, spread:0.00, amp:11, freq:.013, drift:.9,
+    scale:[220.00,261.63,293.66,329.63,392.00] },
+  { label:'PIANO',   count:2, spread:0.13, amp:5,  freq:.016, drift:.35,
+    scale:[261.63,293.66,349.23,392.00,440.00] },
+  { label:'LEAVING', count:2, spread:0.40, amp:16, freq:.008, drift:.6,
+    scale:[246.94,293.66,349.23,392.00,440.00] },
+  { label:'THE HAGUE', count:5, spread:0.30, amp:0, freq:.010, drift:0,
+    scale:[261.63,311.13,349.23,392.00,466.16] },
+  { label:'CHOIR',   count:4, spread:0.26, amp:13, freq:.006, drift:.15,
+    scale:[196.00,246.94,293.66,392.00] },
+  { label:'GUITAR',  count:6, spread:0.40, amp:0,  freq:.010, drift:0,
+    // real open-string pitches: E2 A2 D3 G3 B3 E4
+    scale:[82.41,110.00,146.83,196.00,246.94,329.63] },
+  { label:'NOW',     count:5, spread:0.20, amp:3,  freq:.011, drift:.1,
+    scale:[293.66,349.23,440.00,523.25,587.33] },
+];
+const SLOTS = 6;                       // max strings ever on screen
+const LAST  = CH.length - 1;
+
+/* ---------------- build the SVG ---------------- */
+const stage = document.getElementById('stage');
+const strings = [];
+for (let s = 0; s < SLOTS; s++){
+  const p = document.createElementNS(SVGNS, 'path');
+  p.setAttribute('class', 'string');
+  stage.appendChild(p);
+  strings.push({ el:p, vib:0, x:0, op:0 });
+}
+const noteLayer = document.createElementNS(SVGNS, 'g');
+stage.appendChild(noteLayer);
+
+// the jasmine, drawn only at the very end of the journey
+const mark = document.createElementNS(SVGNS, 'g');
+mark.setAttribute('opacity', '0');
+for (const r of [0, 72, 144, 216, 288]){
+  const e = document.createElementNS(SVGNS, 'ellipse');
+  e.setAttribute('class', 'mark-petal');
+  e.setAttribute('rx', 13); e.setAttribute('ry', 22); e.setAttribute('cy', -26);
+  e.setAttribute('transform', `rotate(${r})`);
+  mark.appendChild(e);
+}
+const core = document.createElementNS(SVGNS, 'circle');
+core.setAttribute('class', 'mark-core'); core.setAttribute('r', 10);
+mark.appendChild(core);
+stage.appendChild(mark);
+
+/* ---------------- transport ruler ---------------- */
+const ruler = document.getElementById('ruler');
+const ticks = CH.map((c, i) => {
+  const d = document.createElement('div');
+  d.className = 'tick';
+  d.textContent = String(i + 1).padStart(2, '0');
+  ruler.appendChild(d);
+  return d;
+});
+
+/* ---------------- audio (opt-in) ---------------- */
+let actx = null, dry = null, soundOn = false;
+function initAudio(){
+  if (actx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  actx = new AC();
+  const len = Math.floor(actx.sampleRate * 2.0);
+  const ir = actx.createBuffer(2, len, actx.sampleRate);
+  for (let c = 0; c < 2; c++){
+    const d = ir.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.8);
+  }
+  const conv = actx.createConvolver(); conv.buffer = ir;
+  const wet = actx.createGain(); wet.gain.value = 0.20;
+  dry = actx.createGain(); dry.gain.value = 0.16;
+  dry.connect(actx.destination);
+  conv.connect(wet); wet.connect(actx.destination);
+  dry.__conv = conv;
+}
+function pluck(freq, gain){
+  if (!soundOn || !actx || actx.state !== 'running') return;
+  const t0 = actx.currentTime, decay = 1.5;
+  const env = actx.createGain();
+  env.gain.setValueAtTime(0.0001, t0);
+  env.gain.exponentialRampToValueAtTime(gain, t0 + 0.006);   // hard attack
+  env.gain.exponentialRampToValueAtTime(0.0001, t0 + decay); // long release
+  env.connect(dry); env.connect(dry.__conv);
+  [1, 2, 3].forEach((p, i) => {
+    const o = actx.createOscillator();
+    o.type = i === 0 ? 'sine' : 'triangle';
+    o.frequency.value = freq * p;
+    const g = actx.createGain(); g.gain.value = 1 / (p * p * 1.7);
+    o.connect(g); g.connect(env);
+    o.start(t0); o.stop(t0 + decay + 0.05);
+  });
+}
+const sndBtn = document.getElementById('snd');
+sndBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  sndBtn.textContent = soundOn ? 'Sound on' : 'Sound off';
+  sndBtn.setAttribute('aria-pressed', String(soundOn));
+  if (soundOn){ initAudio(); if (actx.state === 'suspended') actx.resume(); }
+});
+
+/* ---------------- scroll state ---------------- */
+let scrollY = window.scrollY, lastY = scrollY, delta = 0;
+addEventListener('scroll', () => { scrollY = window.scrollY; }, {passive:true});
+
+// chapter reveals — once only, never re-hide
+const io = 'IntersectionObserver' in window
+  ? new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    }), {rootMargin:'0px 0px -12% 0px', threshold:.1})
+  : null;
+document.querySelectorAll('.copy').forEach(el => io ? io.observe(el) : el.classList.add('in'));
+setTimeout(() => document.querySelectorAll('.copy').forEach(el => el.classList.add('in')), 4000);
+
+/* ---------------- falling notes ---------------- */
+const notes = [];          // {slot, y, el, freq}
+let sinceSpawn = 0;
+const SPAWN_PX = 190;      // one note per this much scrolling
+
+function spawnNote(chap, W, H, headY){
+  const c = CH[chap];
+  const slot = Math.floor(Math.random() * c.count);
+  const el = document.createElementNS(SVGNS, 'circle');
+  el.setAttribute('class', 'note');
+  el.setAttribute('r', 4.5);
+  noteLayer.appendChild(el);
+  notes.push({ slot, y: -30, el, freq: c.scale[slot % c.scale.length] });
+}
+
+/* ---------------- the loop ---------------- */
+const lerp = (a, b, t) => a + (b - a) * t;
+let t0 = performance.now();
+
+function frame(now){
+  const dt = Math.min(48, now - t0); t0 = now;
+  const W = innerWidth, H = innerHeight;
+  const headY = H * 0.46;
+
+  stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  delta = scrollY - lastY; lastY = scrollY;
+
+  // journey progress -> continuous chapter coordinate
+  const total = Math.max(1, document.body.scrollHeight - H);
+  const startPad = H * 0.9, endPad = H * 1.4;   // intro / outro screens
+  const raw = (scrollY - startPad) / Math.max(1, total - startPad - endPad);
+  const prog = Math.min(1, Math.max(0, raw));
+  const t = prog * LAST;
+  const i = Math.min(LAST - 1, Math.floor(t));
+  const f = Math.min(1, Math.max(0, t - i));
+  const A = CH[i], B = CH[Math.min(LAST, i + 1)];
+  const active = Math.round(t);
+
+  // timecode — one minute per chapter reads like a piece, not a percentage
+  const secs = Math.floor(prog * LAST * 60);
+  document.getElementById('tc').textContent =
+    String(Math.floor(secs / 60)).padStart(2,'0') + ':' + String(secs % 60).padStart(2,'0');
+  ticks.forEach((d, k) => d.classList.toggle('on', k === active));
+
+  // interpolated instrument
+  const count  = lerp(A.count,  B.count,  f);
+  const spread = lerp(A.spread, B.spread, f);
+  const amp    = lerp(A.amp,    B.amp,    f);
+  const freq   = lerp(A.freq,   B.freq,   f);
+  const drift  = lerp(A.drift,  B.drift,  f);
+  const cx = W * (W > 860 ? 0.68 : 0.5);
+  const band = Math.min(W * 0.52, 520);
+
+  // playhead spans the instrument band only, never the copy column
+  const hw = Math.min(band * 0.78 + 90, W * 0.46);
+  const hLeft = Math.max(8, cx - hw);
+  const headEl = document.getElementById('head');
+  headEl.style.top = (headY - 6) + 'px';
+  headEl.style.left = hLeft + 'px';
+  headEl.style.width = Math.min(hw * 2, W - hLeft - 62) + 'px';   // clear the ruler
+
+  // fade the instrument out and the mark in over the final chapter
+  const endMix = Math.min(1, Math.max(0, (t - (LAST - 0.55)) / 0.55));
+  // the transport retires with the instrument, so the timecode never ends
+  // up buried under the mark
+  headEl.style.opacity = (1 - endMix * 0.9).toFixed(3);
+
+  for (let s = 0; s < SLOTS; s++){
+    const st = strings[s];
+    const slotPos = c => (c <= 1 ? 0 : (Math.min(s, c - 1) / (c - 1)) * 2 - 1);
+    const posA = s < A.count ? slotPos(A.count) : 0;
+    const posB = s < B.count ? slotPos(B.count) : 0;
+    const opA  = s < A.count ? 1 : 0;
+    const opB  = s < B.count ? 1 : 0;
+    const pos = lerp(posA, posB, f);
+    const op  = lerp(opA, opB, f) * (1 - endMix);
+
+    st.x = cx + pos * spread * band;
+    st.op = op;
+    st.vib *= Math.pow(0.955, dt / 16.7);      // damped decay
+
+    if (op < 0.01){ st.el.setAttribute('opacity', '0'); continue; }
+
+    let d = '';
+    for (let y = -24; y <= H + 24; y += 16){
+      const wobble = reduced ? 0
+        : amp * Math.sin(y * freq + s * 0.8 + now * 0.0004 * drift);
+      const twang = reduced ? 0
+        : st.vib * 15 * Math.sin((y - headY) * 0.022) * Math.exp(-Math.abs(y - headY) / 340);
+      const x = st.x + wobble + twang;
+      d += (d ? 'L' : 'M') + x.toFixed(1) + ' ' + y + ' ';
+    }
+    st.el.setAttribute('d', d);
+    st.el.setAttribute('opacity', (op * (0.40 + 0.50 * st.vib + (amp ? 0 : 0.10))).toFixed(3));
+  }
+
+  // ----- notes ride the strings at scroll speed -----
+  if (!reduced && delta > 0 && endMix < 1){
+    sinceSpawn += delta;
+    if (sinceSpawn > SPAWN_PX){ sinceSpawn = 0; spawnNote(active, W, H, headY); }
+  }
+  for (let n = notes.length - 1; n >= 0; n--){
+    const note = notes[n];
+    const prevY = note.y;
+    note.y += delta;
+    const st = strings[note.slot] || strings[0];
+    note.el.setAttribute('cx', st.x.toFixed(1));
+    note.el.setAttribute('cy', note.y.toFixed(1));
+    note.el.setAttribute('opacity',
+      (Math.min(1, note.y / 90) * Math.min(1, (H - note.y) / 120)).toFixed(2));
+
+    // crossed the playhead -> strike
+    if (prevY < headY && note.y >= headY){
+      st.vib = 1;
+      pluck(note.freq, 0.42);
+    }
+    if (note.y > H + 40 || note.y < -80){ note.el.remove(); notes.splice(n, 1); }
+  }
+
+  // ----- the mark, at the end -----
+  if (endMix > 0.001){
+    // the mark spans 96 user units tip-to-tip; size it to ~30% of the
+    // short edge so it sits in the instrument band, clear of the copy
+    const sc = (Math.min(W, H) * 0.30 / 96) * (0.82 + 0.18 * endMix);
+    mark.setAttribute('opacity', endMix.toFixed(3));
+    mark.setAttribute('transform', `translate(${cx} ${headY}) scale(${sc.toFixed(3)})`);
+  } else {
+    mark.setAttribute('opacity', '0');
+  }
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

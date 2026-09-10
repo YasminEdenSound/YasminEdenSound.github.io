@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+a{color:#2a78d6}a:hover{color:#1a5cab}
+.pg{width:400px;font-family:'Caveat',cursive;color:#1a1a1a}
+.sec{padding:16px 18px;border-bottom:1px dashed #e0ded9}
+.dark{background:#171613;color:#efece3}
+.mono{font:9px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.09em;text-transform:uppercase;color:#a09a8e}
+.bar{height:7px;background:#ddd9d2;border-radius:4px}
+.dark .bar{background:#33312b}
+.hl{height:22px;background:#c6c2ba;border-radius:4px}
+.dark .hl{background:#4a473f}
+.box{border:1.5px dashed #b9b5ac;border-radius:6px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;color:#8b8579;padding:6px;line-height:1.15}
+.dark .box{border-color:#4d4a42;color:#9a9488}
+.pill{border:1.5px solid currentColor;border-radius:999px;padding:3px 12px;font-size:13px}
+.acc{color:#b99418}
+.dark .acc{color:#e9c846}
+.r{display:flex;gap:8px}
+.c{display:flex;flex-direction:column;gap:8px}
+.lbl{font-size:13px;color:#8b8579}
+.dark .lbl{color:#96907f}
+.mark{width:15px;height:15px;flex:none}
+</style></helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Three ways to place it — same content, different structure</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>The Console — straight vertical run, dark, tracks up front</div>
+<div class="dv-card">
+<div class="pg">
+
+<div class="sec dark r" style="align-items:center;justify-content:space-between;padding:10px 18px">
+<div class="r" style="align-items:center;gap:6px"><svg class="mark" viewBox="-50 -50 100 100"><g fill="#e9c846"><ellipse rx="13" ry="38" cy="-26"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(288)"></ellipse></g></svg><span class="mono" style="color:#efece3">[name]</span></div>
+<div class="r" style="align-items:center;gap:10px"><span class="mono">work · rates · about</span><span class="pill acc">Book a session</span></div>
+</div>
+
+<div class="sec dark c" style="padding:34px 18px;align-items:center;gap:12px;position:relative;overflow:hidden">
+<svg viewBox="-50 -50 100 100" style="position:absolute;width:230px;height:230px;right:-70px;top:-40px;opacity:.13"><g fill="#e9c846"><ellipse rx="13" ry="38" cy="-26"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(288)"></ellipse></g></svg>
+<div class="mono">mixing · mastering · recording</div>
+<div class="hl" style="width:82%"></div>
+<div class="hl" style="width:56%"></div>
+<div class="bar" style="width:70%;margin-top:4px"></div>
+<div class="bar" style="width:48%"></div>
+<span class="pill acc" style="margin-top:8px">Book a session</span>
+</div>
+
+<div class="sec c">
+<div class="mono">01 — selected work</div>
+<div class="r">
+<div class="c" style="flex:1;gap:5px"><div class="box" style="height:52px">SoundCloud<br>embed</div><div class="lbl" style="font-size:11px">bars react on play</div></div>
+<div class="c" style="flex:1;gap:5px"><div class="box" style="height:52px">SoundCloud<br>embed</div><div class="lbl" style="font-size:11px">&nbsp;</div></div>
+<div class="c" style="flex:1;gap:5px"><div class="box" style="height:52px">SoundCloud<br>embed</div><div class="lbl" style="font-size:11px">&nbsp;</div></div>
+</div>
+</div>
+
+<div class="sec c">
+<div class="mono">02 — rates</div>
+<div class="r" style="gap:0;border:1.5px dashed #b9b5ac;border-radius:6px">
+<div class="c" style="flex:1;padding:10px;gap:6px;border-right:1.5px dashed #dedad2"><span class="lbl">Mixing</span><span class="acc" style="font-size:17px">$XXX</span><span class="mono">per song</span></div>
+<div class="c" style="flex:1;padding:10px;gap:6px;border-right:1.5px dashed #dedad2"><span class="lbl">Mastering</span><span class="acc" style="font-size:17px">$XX</span><span class="mono">per song</span></div>
+<div class="c" style="flex:1;padding:10px;gap:6px"><span class="lbl">Recording</span><span class="acc" style="font-size:17px">$XXX</span><span class="mono">per day</span></div>
+</div>
+</div>
+
+<div class="sec c">
+<div class="mono">03 — how it works</div>
+<div class="r" style="gap:6px">
+<div class="c" style="flex:1;gap:4px"><span class="acc mono">01</span><div class="bar"></div><div class="bar" style="width:70%"></div></div>
+<div class="c" style="flex:1;gap:4px"><span class="acc mono">02</span><div class="bar"></div><div class="bar" style="width:70%"></div></div>
+<div class="c" style="flex:1;gap:4px"><span class="acc mono">03</span><div class="bar"></div><div class="bar" style="width:70%"></div></div>
+<div class="c" style="flex:1;gap:4px"><span class="acc mono">04</span><div class="bar"></div><div class="bar" style="width:70%"></div></div>
+</div>
+</div>
+
+<div class="sec r" style="gap:12px">
+<div class="box" style="width:120px;height:118px;flex:none">photo<br>duotone</div>
+<div class="c" style="flex:1"><div class="mono">04 — about</div><div class="hl" style="width:70%"></div><div class="bar"></div><div class="bar"></div><div class="bar" style="width:88%"></div><div class="bar" style="width:60%"></div></div>
+</div>
+
+<div class="sec c">
+<div class="mono">05 — what artists say</div>
+<div class="r">
+<div class="c" style="flex:1;padding:8px;border:1.5px dashed #b9b5ac;border-radius:6px"><div class="bar"></div><div class="bar" style="width:80%"></div><div class="mono">— band</div></div>
+<div class="c" style="flex:1;padding:8px;border:1.5px dashed #b9b5ac;border-radius:6px"><div class="bar"></div><div class="bar" style="width:80%"></div><div class="mono">— band</div></div>
+</div>
+</div>
+
+<div class="sec c">
+<div class="mono">06 — questions</div>
+<div class="r" style="justify-content:space-between;align-items:center"><div class="bar" style="width:65%"></div><span class="acc">+</span></div>
+<div class="r" style="justify-content:space-between;align-items:center"><div class="bar" style="width:52%"></div><span class="acc">+</span></div>
+<div class="r" style="justify-content:space-between;align-items:center"><div class="bar" style="width:58%"></div><span class="acc">+</span></div>
+</div>
+
+<div class="sec dark r" style="gap:14px">
+<div class="c" style="flex:1.15">
+<div class="mono">07 — book a session</div>
+<div class="box" style="height:20px">name</div>
+<div class="box" style="height:20px">email</div>
+<div class="box" style="height:44px">message</div>
+<span class="pill acc" style="align-self:flex-start">Send</span>
+</div>
+<div class="c" style="flex:.85;gap:7px;padding-top:16px">
+<div class="lbl">→ email</div><div class="lbl">→ WhatsApp</div><div class="lbl">→ Instagram</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>The Sticky Rail — identity and contact pinned left, work scrolls right</div>
+<div class="dv-card">
+<div class="pg r" style="gap:0">
+
+<div class="c dark" style="width:132px;flex:none;padding:16px 14px;gap:10px;justify-content:space-between">
+<div class="c" style="gap:10px">
+<svg class="mark" style="width:30px;height:30px" viewBox="-50 -50 100 100"><g fill="#e9c846"><ellipse rx="13" ry="38" cy="-26"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(288)"></ellipse></g></svg>
+<div class="hl" style="width:80%"></div>
+<div class="mono">mixing<br>mastering<br>recording</div>
+<div class="c" style="gap:5px;margin-top:6px"><div class="bar" style="width:60%"></div><div class="bar" style="width:72%"></div><div class="bar" style="width:52%"></div><div class="bar" style="width:66%"></div></div>
+</div>
+<div class="c" style="gap:7px">
+<span class="pill acc" style="text-align:center">Book</span>
+<div class="mono">email<br>whatsapp<br>instagram</div>
+<div class="lbl" style="font-size:11px">stays fixed while<br>you scroll</div>
+</div>
+</div>
+
+<div class="c" style="flex:1;gap:0">
+<div class="sec c" style="padding:16px">
+<div class="mono">selected work</div>
+<div class="box" style="height:40px">SoundCloud embed</div>
+<div class="box" style="height:40px">SoundCloud embed</div>
+<div class="box" style="height:40px">SoundCloud embed</div>
+<div class="lbl" style="font-size:11px">full-width players, one per row</div>
+</div>
+<div class="sec c" style="padding:16px">
+<div class="mono">rates</div>
+<div class="r" style="justify-content:space-between;align-items:baseline"><span class="lbl">Mixing</span><span class="acc">$XXX / song</span></div>
+<div class="r" style="justify-content:space-between;align-items:baseline"><span class="lbl">Mastering</span><span class="acc">$XX / song</span></div>
+<div class="r" style="justify-content:space-between;align-items:baseline"><span class="lbl">Recording</span><span class="acc">$XXX / day</span></div>
+<div class="lbl" style="font-size:11px">reads like a price list, not cards</div>
+</div>
+<div class="sec c" style="padding:16px">
+<div class="mono">process</div>
+<div class="r" style="align-items:center;gap:6px"><span class="acc mono">01</span><div class="bar" style="flex:1"></div></div>
+<div class="r" style="align-items:center;gap:6px"><span class="acc mono">02</span><div class="bar" style="flex:1"></div></div>
+<div class="r" style="align-items:center;gap:6px"><span class="acc mono">03</span><div class="bar" style="flex:1"></div></div>
+<div class="r" style="align-items:center;gap:6px"><span class="acc mono">04</span><div class="bar" style="flex:1"></div></div>
+</div>
+<div class="sec c" style="padding:16px">
+<div class="mono">about</div>
+<div class="box" style="height:86px">photo — duotone,<br>full column width</div>
+<div class="bar"></div><div class="bar" style="width:85%"></div><div class="bar" style="width:62%"></div>
+</div>
+<div class="sec c" style="padding:16px">
+<div class="mono">artists · questions</div>
+<div class="c" style="padding:8px;border:1.5px dashed #b9b5ac;border-radius:6px;gap:6px"><div class="bar"></div><div class="bar" style="width:72%"></div><div class="mono">— band</div></div>
+<div class="r" style="justify-content:space-between;align-items:center"><div class="bar" style="width:60%"></div><span class="acc">+</span></div>
+<div class="r" style="justify-content:space-between;align-items:center"><div class="bar" style="width:48%"></div><span class="acc">+</span></div>
+</div>
+<div class="sec dark c" style="padding:16px">
+<div class="mono">book a session</div>
+<div class="box" style="height:18px">name</div>
+<div class="box" style="height:18px">email</div>
+<div class="box" style="height:38px">message</div>
+<span class="pill acc" style="align-self:flex-start">Send</span>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Photo First — she is the hero, player docked to the bottom edge</div>
+<div class="dv-card">
+<div class="pg" style="position:relative">
+
+<div class="sec dark c" style="padding:0;border:0;position:relative">
+<div class="box" style="height:200px;border:0;border-bottom:1.5px dashed #4d4a42"></div>
+<div class="mono" style="position:absolute;left:18px;top:36px;width:150px;line-height:1.5">photo — full bleed,<br>duotone yellow / black</div>
+<div class="c" style="position:absolute;left:18px;bottom:16px;gap:6px">
+<div class="mono" style="color:#e9c846">mixing · mastering · recording</div>
+<div class="hl" style="width:180px"></div>
+<div class="hl" style="width:120px"></div>
+<span class="pill acc" style="align-self:flex-start;margin-top:4px">Book a session</span>
+</div>
+<div class="r" style="position:absolute;right:14px;top:12px;align-items:center;gap:6px"><svg class="mark" viewBox="-50 -50 100 100"><g fill="#e9c846"><ellipse rx="13" ry="38" cy="-26"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(288)"></ellipse></g></svg><span class="mono" style="color:#efece3">[name]</span></div>
+</div>
+
+<div class="sec c">
+<div class="mono">rates — first thing after the photo</div>
+<div class="r">
+<div class="c" style="flex:1;padding:10px;border:1.5px dashed #b9b5ac;border-radius:6px"><span class="lbl">Mixing</span><span class="acc" style="font-size:17px">$XXX</span><span class="mono">song</span></div>
+<div class="c" style="flex:1;padding:10px;border:1.5px dashed #b9b5ac;border-radius:6px"><span class="lbl">Mastering</span><span class="acc" style="font-size:17px">$XX</span><span class="mono">song</span></div>
+<div class="c" style="flex:1;padding:10px;border:1.5px dashed #b9b5ac;border-radius:6px"><span class="lbl">Recording</span><span class="acc" style="font-size:17px">$XXX</span><span class="mono">day</span></div>
+</div>
+</div>
+
+<div class="sec c">
+<div class="mono">four steps, one line each</div>
+<div class="r" style="align-items:center;gap:8px"><span class="acc mono">01</span><div class="bar" style="flex:1"></div><span class="acc mono">02</span><div class="bar" style="flex:1"></div></div>
+<div class="r" style="align-items:center;gap:8px"><span class="acc mono">03</span><div class="bar" style="flex:1"></div><span class="acc mono">04</span><div class="bar" style="flex:1"></div></div>
+</div>
+
+<div class="sec c">
+<div class="mono">about — text only, photo already used above</div>
+<div class="hl" style="width:64%"></div>
+<div class="bar"></div><div class="bar"></div><div class="bar" style="width:78%"></div>
+</div>
+
+<div class="sec c">
+<div class="mono">listen</div>
+<div class="r" style="gap:8px">
+<div class="box" style="flex:1;height:46px">track 1</div>
+<div class="box" style="flex:1;height:46px">track 2</div>
+<div class="box" style="flex:1;height:46px">track 3</div>
+</div>
+<div class="lbl" style="font-size:11px">clicking one loads it into the dock below</div>
+</div>
+
+<div class="sec c">
+<div class="mono">artists</div>
+<div class="r">
+<div class="c" style="flex:1;padding:8px;border:1.5px dashed #b9b5ac;border-radius:6px"><div class="bar"></div><div class="bar" style="width:76%"></div><div class="mono">— band</div></div>
+<div class="c" style="flex:1;padding:8px;border:1.5px dashed #b9b5ac;border-radius:6px"><div class="bar"></div><div class="bar" style="width:76%"></div><div class="mono">— band</div></div>
+</div>
+</div>
+
+<div class="sec c">
+<div class="mono">questions</div>
+<div class="r" style="justify-content:space-between;align-items:center"><div class="bar" style="width:62%"></div><span class="acc">+</span></div>
+<div class="r" style="justify-content:space-between;align-items:center"><div class="bar" style="width:50%"></div><span class="acc">+</span></div>
+</div>
+
+<div class="sec c">
+<div class="mono">book a session</div>
+<div class="r" style="gap:8px"><div class="box" style="flex:1;height:20px">name</div><div class="box" style="flex:1;height:20px">email</div></div>
+<div class="box" style="height:40px">message</div>
+<div class="r" style="justify-content:space-between;align-items:center"><span class="pill acc">Send</span><span class="mono">email · whatsapp · instagram</span></div>
+</div>
+
+<div class="sec dark r" style="align-items:center;gap:8px;padding:9px 14px;border:0">
+<span class="acc" style="font-size:15px">▶</span>
+<div class="c" style="flex:1;gap:3px"><div class="mono" style="color:#efece3">now playing — track 1</div><div class="bar"></div></div>
+<div class="lbl" style="font-size:11px;width:86px;line-height:1.2">docked player,<br>always reachable</div>
+</div>
+
+</div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "build <a class="dv-oid" href="#1a">1a</a>" · "<a class="dv-oid" href="#1b">1b</a> but with the rail on the right" · "show me the hero of <a class="dv-oid" href="#1c">1c</a> at full fidelity"</p>
+</section>
+</x-dc>
+</body>
+</html>

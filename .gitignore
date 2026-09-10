@@ -1,0 +1,4 @@
+# local scratch / probe files
+_*.html
+.DS_Store
+Thumbs.db
