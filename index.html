@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Yasmin Eden Sound — mixing, mastering, recording</title>
+<!-- PRE-LAUNCH: keeps previews out of Google. DELETE THIS LINE when the
+     real content is in and the site is meant to be found. -->
+<meta name="robots" content="noindex, nofollow">
 <meta name="description" content="I'm Yasmin Eden — an independent engineer mixing, mastering and recording for bands and solo artists. Send me your demos.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,10 +21,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html{
   scroll-behavior:smooth;
-  /* proximity, not mandatory: mandatory traps inside the rates and booking
-     sections, which are legitimately taller than the viewport. snap-stop
-     always still forces one gesture = one chapter through the journey. */
-  scroll-snap-type:y proximity;
   -webkit-text-size-adjust:100%;
 }
 body{
@@ -85,18 +84,26 @@ html{scroll-padding-top:74px}
 
 #snd{
   position:fixed;right:68px;bottom:20px;z-index:31;
+  display:inline-flex;align-items:center;
   font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;
   color:var(--acc);background:rgba(18,17,14,.72);backdrop-filter:blur(8px);
   border:1px solid rgba(233,200,70,.45);border-radius:999px;padding:11px 16px;cursor:pointer;
-  transition:background .15s,color .15s;
+  transition:background .15s,color .15s,opacity .35s ease;
+}
+/* the toggle only drives the journey's strings — past them no notes spawn,
+   so it does nothing and would just sit on top of the form and rate cards */
+#snd.gone{opacity:0;pointer-events:none}
+/* armed but waiting for the gesture the browser insists on */
+#snd.armed{border-color:var(--acc);animation:sndPulse 2.8s ease-in-out infinite}
+@keyframes sndPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(233,200,70,0)}
+  50%    {box-shadow:0 0 0 5px rgba(233,200,70,.13)}
 }
 #snd:hover,#snd[aria-pressed="true"]{background:var(--acc);color:var(--ink)}
 #snd:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
 
 /* ============ journey ============ */
 main{position:relative;z-index:4}
-#intro,.chapter{scroll-snap-align:center;scroll-snap-stop:always}
-
 #intro{
   min-height:100svh;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
   gap:20px;padding:0 var(--gut);max-width:var(--band);margin:0 auto;
@@ -115,7 +122,7 @@ main{position:relative;z-index:4}
 
 .chapter{
   min-height:100svh;display:flex;align-items:center;
-  padding:14vh var(--gut);max-width:var(--band);margin:0 auto;
+  padding:8vh var(--gut);max-width:var(--band);margin:0 auto;
 }
 .copy{max-width:44ch}
 .kicker{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.26em;
@@ -133,6 +140,77 @@ main{position:relative;z-index:4}
 [data-reveal]{opacity:0;transform:translateY(18px);
   transition:opacity .55s ease, transform .8s var(--release)}
 [data-reveal].in{opacity:1;transform:none}
+
+/* --- per-chapter photo + link slots ---
+   The frame is a placeholder until the file exists: a small JS probe loads
+   data-img and, only on success, promotes it to a background image. That way
+   an unfilled slot looks deliberate instead of showing a broken-image icon,
+   and dropping the file in is the entire "integration". */
+.media{margin-top:22px;max-width:min(100%,300px)}
+.fan{position:relative;aspect-ratio:3/2;width:100%}
+.fan-card{
+  position:absolute;inset:0;padding:0;cursor:pointer;
+  border-radius:3px;overflow:hidden;
+  border:1px dashed rgba(242,237,225,.22);
+  /* opaque, or the card behind shows through and both labels overlap */
+  background-color:#191712;
+  background-size:cover;background-position:center;
+  transform-origin:50% 100%;
+  transition:transform .45s var(--release), opacity .35s ease;
+  transform:rotate(calc(var(--i,0) * -3.2deg))
+            translateY(calc(var(--i,0) * -7px))
+            scale(calc(1 - var(--i,0) * 0.045));
+}
+.fan-card.has-img{border:1px solid rgba(242,237,225,.14)}
+/* only the top card is fully lit, so the stack reads as depth not clutter */
+/* gentle enough that a four-card fan still shows its back card */
+.fan-card{opacity:calc(1 - var(--i,0) * 0.22)}
+.fan:hover .fan-card.top{transform:translateY(-2px)}
+/* only the top card shows its label — the sliver of the card behind was
+   leaking clipped placeholder text */
+.fan-card:not(.top) .slot{visibility:hidden}
+.fan-card:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+.fan-count{color:var(--cream)}
+.fan-hint{margin-left:10px;color:var(--acc);opacity:.75}
+.fan-hint::before{content:'· '}
+
+.frame{
+  position:relative;display:block;aspect-ratio:3/2;border-radius:3px;overflow:hidden;
+  border:1px dashed rgba(242,237,225,.22);background:rgba(242,237,225,.03);
+  background-size:cover;background-position:center;
+}
+.frame.has-img{border:1px solid rgba(242,237,225,.14)}
+/* A logo is not a photograph: its artwork is dark (#353333 / #000) on a
+   transparent ground, so on ink it is invisible and `cover` amputates it.
+   Give it a cream plate, fit it whole, and pad it.
+   background-origin must be content-box — the padding-box default ignores
+   the padding and the logo runs to the frame edge. */
+.logo{
+  background-color:var(--cream);
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-origin:content-box;
+  box-sizing:border-box;
+  padding:clamp(18px,6%,44px);
+}
+.slot{
+  /* column, or the <b> becomes a sibling flex item and "Photo" lands
+     beside the description instead of above it */
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:16px;
+  font:500 9px/1.7 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);
+}
+.slot b{display:block;color:rgba(242,237,225,.5);font-weight:500;margin-bottom:6px}
+.has-img .slot{display:none}
+.media figcaption{margin-top:11px;
+  font:500 9px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim)}
+.media .lnk{display:inline-flex;align-items:center;min-height:44px;
+  font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--acc);transition:color .15s}
+.media .lnk:hover{color:var(--cream)}
 
 /* ============ act II ============ */
 section.act2{position:relative;z-index:4;max-width:var(--band);margin:0 auto;
@@ -164,7 +242,7 @@ section.act2{position:relative;z-index:4;max-width:var(--band);margin:0 auto;
 .track .state{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim);white-space:nowrap;padding-top:4px}
 .track.playing .state{color:var(--acc)}
-.track canvas{width:100%;height:44px;display:block}
+.track canvas{width:100%;height:42px;display:block}
 .track .ctl{display:flex;align-items:center;gap:12px}
 .play{width:44px;height:44px;flex:none;border-radius:999px;border:1px solid var(--acc);
   background:none;color:var(--acc);cursor:pointer;display:grid;place-items:center;
@@ -236,7 +314,17 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   position:fixed;inset:0;z-index:100;background:var(--ink);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;
   transition:opacity .7s ease, visibility .7s;
+  cursor:pointer;
 }
+/* kills every running animation for one frame so the intro can replay */
+#loader.reset *{animation:none !important}
+#ldhint{
+  font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--dim);
+  transition:opacity .4s ease;
+  animation:ldHint .6s var(--release) 1.5s both;
+}
+@keyframes ldHint{from{opacity:0}to{opacity:.75}}
 /* MUST be `0 0`. With transform-box:view-box, browsers resolve percentages
    against the viewBox size but ignore its -50 -50 min-x/min-y, so 50% pivots
    on the corner and every rotated petal swings off-canvas. */
@@ -365,12 +453,17 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
      stays readable on a small screen instead of competing with strings */
   #rig{opacity:.4}
   #ruler{display:none}
-  /* on a phone the copy is full-width, so a full-width playhead rule would
-     draw a line straight through the headline. Compact it into a readout
-     pinned to the right edge instead. */
+  /* On a phone the copy is full-width (max-width:none), so headlines run to
+     ~x=370 and ANY rule would cross them — a shortened one still cut 104px
+     through chapter 01. Drop the rules entirely and keep just the timecode
+     pinned to the right edge. */
   #head{justify-content:flex-end}
-  #head .rule{max-width:40px}
-  #head .tc{padding:0 8px;font-size:9px}
+  #head .rule{display:none}
+  #head .tc{padding:0;font-size:9px}
+  /* 44px minimum tap targets */
+  #snd{min-height:44px;padding:0 16px}
+  #topbar .book{min-height:44px;padding:0 16px}
+  #topbar .wordmark{min-height:44px}
   #snd{right:16px;bottom:16px}
   #topbar .inner{padding:11px var(--gut)}
   #topbar .wordmark span{font-size:17px}
@@ -381,7 +474,10 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   html{scroll-padding-top:62px}
   #intro,.chapter{padding-left:var(--gut);padding-right:var(--gut)}
   #intro h1{font-size:clamp(36px,10vw,54px);max-width:none}
-  .chapter{padding-top:16vh;padding-bottom:16vh}
+  .chapter{padding-top:7vh;padding-bottom:7vh}
+  /* ch01 carries four fan cards and three paragraphs; at 100% width the
+     section ran 118px past its own snap unit */
+  .media{max-width:min(100%,300px);margin-top:18px}
   .chapter h2{font-size:clamp(28px,8vw,40px)}
   .copy{max-width:none}
   /* a scrim so strings never sit directly under running text */
@@ -389,7 +485,11 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   .g-two{gap:28px}
   .portrait{order:-1}
   .track{padding:16px}
-  .rate{padding:22px}
+  .rate{padding:22px 22px 30px}
+  /* belt and braces: the sound toggle is hidden past the journey by JS, but
+     the submit button is too important to let that be the only thing
+     standing between it and a floating pill */
+  form{padding-bottom:60px}
   footer{flex-direction:column;align-items:flex-start;gap:10px}
 }
 @media (max-width:400px){
@@ -397,9 +497,9 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   .chapter h2{font-size:26px}
 }
 @media (prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto;scroll-snap-type:none}
+  html{scroll-behavior:auto}
   [data-reveal]{opacity:1;transform:none;transition:none}
-  .scrollcue{animation:none}
+  .scrollcue,#snd.armed{animation:none}
 }
 </style>
 </head>
@@ -421,21 +521,36 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
     <div class="ld-name">Yasmin Eden</div>
     <div class="ld-sub">Sound</div>
   </div>
+  <div id="ldhint">Tap to hear it</div>
 </div>
 <script>
 (function(){
   var el = document.getElementById('loader');
   var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var seen = sessionStorage.getItem('ye-loader-seen');
+  var timer = null;
   function hide(){
     el.style.opacity = '0'; el.style.visibility = 'hidden'; el.style.pointerEvents = 'none';
     document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+    window.__ldr.active = false;
   }
+  // 2050ms: the wordmark finishes at ~1.91s, then a 700ms fade
+  function arm(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){ hide(); sessionStorage.setItem('ye-loader-seen','1'); }, 2050);
+  }
+  window.__ldr = {
+    el: el, active: false,
+    restart: function(){
+      el.classList.add('reset'); void el.offsetWidth; el.classList.remove('reset');
+      arm();
+    }
+  };
   if (reduced || seen){ el.style.transition = 'none'; hide(); return; }
   document.documentElement.style.overflow = 'hidden';
   document.body.style.overflow = 'hidden';
-  // 2050ms: the wordmark finishes at ~1.91s, then a 700ms fade
-  setTimeout(function(){ hide(); sessionStorage.setItem('ye-loader-seen','1'); }, 2050);
+  window.__ldr.active = true;
+  arm();
 })();
 </script>
 
@@ -474,48 +589,90 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   </section>
 
   <section class="chapter"><div class="copy" data-reveal>
-    <span class="kicker">01 · The bedroom</span>
-    <h2>I made the first record in my bedroom.</h2>
-    <p>I wrote, played and produced my first album in my room at my parents' house. No studio, no booth, no budget — one room and whatever I could get a microphone in front of.</p>
-    <p class="ph">[The record's name, the year, and what you recorded it on.]</p>
+    <span class="kicker">01 · The piano</span>
+    <h2>It all starts at the piano.</h2>
+    <p>Piano came first, and years of it before I recorded anything. Then I started teaching it — which is where the ear actually got trained, because you can't fix a sound you can't explain to someone else. I play flute as well. Every instrument I've learned is one more voice I can pick out inside a mix.</p>
+    <p>The lessons paid for the rest — my first album was written, played and produced in my room at my parents' house.</p>
+    <p class="ph">[How long you've taught, and the record's name and year.]</p>
+    <figure class="media">
+      <div class="fan" data-fan>
+      <button type="button" class="fan-card" data-img="assets/journey/01a-piano.png"
+              aria-label="At the piano">
+        <span class="slot"><b>Photo 1</b>At the piano<br>assets/journey/01a-piano.png</span>
+      </button>
+      <button type="button" class="fan-card" data-img="assets/journey/01b-teaching.jpg"
+              aria-label="Teaching a lesson">
+        <span class="slot"><b>Photo 2</b>Teaching a lesson<br>assets/journey/01b-teaching.jpg</span>
+      </button>
+      <button type="button" class="fan-card" data-img="assets/journey/01c-flute.png"
+              aria-label="Playing flute">
+        <span class="slot"><b>Photo 3</b>Playing flute<br>assets/journey/01c-flute.png</span>
+      </button>
+      <button type="button" class="fan-card" data-img="assets/journey/01d-bedroom.png"
+              aria-label="The room the first record was made in">
+        <span class="slot"><b>Photo 4</b>The room the first record was made in<br>assets/journey/01d-bedroom.png</span>
+      </button>
+      </div>
+      <figcaption><span class="fan-count"></span><span class="fan-hint">Tap to flip</span> · [Caption]</figcaption>
+    </figure>
   </div></section>
 
   <section class="chapter"><div class="copy" data-reveal>
-    <span class="kicker">02 · Paying for it</span>
-    <h2>Piano lessons paid for it.</h2>
-    <p>I taught piano to fund the work. Every hour at someone else's keyboard bought another hour at my own — and it's where the patience for other people's records came from.</p>
-  </div></section>
-
-  <section class="chapter"><div class="copy" data-reveal>
-    <span class="kicker">03 · Leaving</span>
-    <h2>Then I left everyone I knew.</h2>
-    <p>It wasn't going to happen where I was. So I went — abroad, on my own, to study music properly.</p>
-    <p class="ph">[One line on the decision: where you left, who you left, what it cost.]</p>
-  </div></section>
-
-  <section class="chapter"><div class="copy" data-reveal>
-    <span class="kicker">04 · The Hague</span>
+    <span class="kicker">02 · The Hague</span>
     <h2>The Royal Conservatoire, The Hague.</h2>
-    <p>I'm finishing my degree in sound there now — the formal half of an ear that had already been working for years.</p>
+    <p>I moved abroad to study sound properly, and I'm finishing that degree there now. Formal training gave structure to an ear that had already been working for years: acoustics, signal flow, critical listening, and studio practice alongside people who do this for a living.</p>
+    <p class="ph">[Specialisation, graduation year, and any credits or projects from the programme.]</p>
+    <figure class="media">
+      <div class="fan" data-fan>
+      <!-- PLACEHOLDER ONLY — trademarked logo of The Royal Conservatory of
+           Music (Toronto), NOT the Royal Conservatoire The Hague. Replace. -->
+      <button type="button" class="fan-card logo" data-img="assets/journey/02a-hague.svg"
+              aria-label="Placeholder logo — replace with the Royal Conservatoire The Hague">
+        <span class="slot"><b>Photo 1</b>Placeholder logo — replace with the Royal Conservatoire The Hague<br>assets/journey/02a-hague.svg</span>
+      </button>
+      <button type="button" class="fan-card" data-img="assets/journey/02b-studio.png"
+              aria-label="At work in a studio at the conservatoire">
+        <span class="slot"><b>Photo 2</b>At work in a studio at the conservatoire<br>assets/journey/02b-studio.png</span>
+      </button>
+      </div>
+      <figcaption><span class="fan-count"></span><span class="fan-hint">Tap to flip</span> · [Caption]</figcaption>
+    </figure>
   </div></section>
 
   <section class="chapter"><div class="copy" data-reveal>
-    <span class="kicker">05 · The choir</span>
-    <h2>I conduct a choir.</h2>
-    <p>Standing in front of a room of singers and making them arrive together is the same job as a mix: balance, blend, and knowing who to bring forward.</p>
+    <span class="kicker">03 · The choir</span>
+    <h2>I conduct a choir. And I still teach.</h2>
+    <p>Standing in front of a room of singers and making them arrive together is the same job as a mix: balance, blend, and knowing who to bring forward. I teach guitar now as well as piano — it keeps my ear honest, because you can't explain a sound you don't understand.</p>
     <p class="ph">[Which choir, how many voices, how long.]</p>
+    <figure class="media">
+      <div class="fan" data-fan>
+      <button type="button" class="fan-card" data-img="assets/journey/03a-choir.png"
+              aria-label="Conducting, mid-rehearsal">
+        <span class="slot"><b>Photo 1</b>Conducting, mid-rehearsal<br>assets/journey/03a-choir.png</span>
+      </button>
+      <button type="button" class="fan-card" data-img="assets/journey/03b-guitar.png"
+              aria-label="Teaching guitar">
+        <span class="slot"><b>Photo 2</b>Teaching guitar<br>assets/journey/03b-guitar.png</span>
+      </button>
+      </div>
+      <figcaption><span class="fan-count"></span><span class="fan-hint">Tap to flip</span> · [Caption]</figcaption>
+    </figure>
   </div></section>
 
   <section class="chapter"><div class="copy" data-reveal>
-    <span class="kicker">06 · Six strings</span>
-    <h2>And I still teach.</h2>
-    <p>Guitar now, as well as piano. Teaching keeps my ear honest — you can't explain a sound you don't actually understand.</p>
-  </div></section>
-
-  <section class="chapter"><div class="copy" data-reveal>
-    <span class="kicker">07 · Now</span>
+    <span class="kicker">04 · Now</span>
     <h2>All of it ends up in the mix.</h2>
-    <p>Bedroom producer, teacher, conductor, engineer. It's why a record I finish sounds like the room it was made in — and like the people who made it.</p>
+    <p>Producer, teacher, conductor, engineer. It's why a record I finish sounds like the room it was made in — and like the people who made it.</p>
+    <figure class="media">
+      <div class="fan" data-fan>
+      <button type="button" class="fan-card" data-img="assets/journey/04a-desk.png"
+              aria-label="At the desk today">
+        <span class="slot"><b>Photo 1</b>At the desk today<br>assets/journey/04a-desk.png</span>
+      </button>
+      </div>
+      <figcaption><span class="fan-count"></span> · [Caption]</figcaption>
+      <a class="lnk" href="#work">Hear the work ↓</a>
+    </figure>
   </div></section>
 
   <!-- ============ act II: the work ============ -->
@@ -617,7 +774,8 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
         <label><span class="cap">Email</span><input name="email" type="email" required></label>
         <label><span class="cap">About the record</span><textarea name="message" rows="5" required></textarea></label>
         <button class="solid" type="submit">Send it over</button>
-        <span class="note-sm">Replace YOUR_FORM_ID with the real Formspree endpoint, then delete this line.</span>
+        <!-- TODO before launch: replace YOUR_FORM_ID in the form action above
+             with the real Formspree endpoint. Until then submissions go nowhere. -->
       </form>
     </div>
   </section></div>
@@ -671,27 +829,54 @@ stage.appendChild(noteLayer);
 
 const mark = document.createElementNS(SVGNS, 'g');
 mark.setAttribute('opacity', '0');
-for (const r of [0,72,144,216,288]){
+// petals are kept as refs so each can bloom and fold on its own beat rather
+// than the whole mark cross-fading as one flat object
+const markPetals = [0, 72, 144, 216, 288].map(r => {
   const e = document.createElementNS(SVGNS, 'ellipse');
   e.setAttribute('class','mark-petal');
   e.setAttribute('rx',13); e.setAttribute('ry',22); e.setAttribute('cy',-26);
   e.setAttribute('transform', `rotate(${r})`);
   mark.appendChild(e);
-}
+  return { el: e, r };
+});
 const core = document.createElementNS(SVGNS,'circle');
 core.setAttribute('class','mark-core'); core.setAttribute('r',10);
 mark.appendChild(core);
 stage.appendChild(mark);
 
+/* Petals scale about the group's own origin, so scale(0) collapses them into
+   the centre — they grow outward from the core instead of fading in place.
+   easeOutBack gives the open a little overshoot; the close is a plain cubic
+   ease-in so it retracts rather than bouncing on the way out. */
+/* The mark is CUED, not scrubbed. Scroll only decides WHEN it starts; once
+   triggered it plays its bloom straight through at its own pace, and the exit
+   is a second self-contained take. Everything else on the page tracks the
+   finger — this one moment does not. */
+const MARK_IN_MS = 1150, MARK_OUT_MS = 850;
+let markPhase = 'idle';   // idle -> in -> open -> out -> hidden
+let markT0 = 0;
+
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+const easeOutBack = x => { const c = 1.35; const u = x - 1; return 1 + (c + 1) * u * u * u + c * u * u; };
+const easeInCubic = x => x * x * x;
+// spread five petals across a progress ramp so they arrive in sequence
+const stagger = (m, i, n = 5, step = 0.09) => clamp01((m - i * step) / (1 - (n - 1) * step));
+
+/* The ruler marks CHAPTERS; CH above is the instrument's own state list and
+   the two no longer have the same length. Deriving the ticks from the DOM
+   keeps them in step whenever chapters are added or merged. */
 const ruler = document.getElementById('ruler');
-const ticks = CH.map((c,i) => {
+const chapterEls = [...document.querySelectorAll('.chapter')];
+const ticks = chapterEls.map((c, i) => {
   const d = document.createElement('div');
-  d.className = 'tick'; d.textContent = String(i+1).padStart(2,'0');
+  d.className = 'tick'; d.textContent = String(i + 1).padStart(2, '0');
   ruler.appendChild(d); return d;
 });
 
 /* ---------------- audio ---------------- */
-let actx = null, dry = null, soundOn = false;
+// Sound is ON unless the visitor has switched it off before.
+let actx = null, dry = null;
+let soundOn = localStorage.getItem('ye-sound') !== '0';
 function initAudio(){
   if (actx) return;
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -710,9 +895,9 @@ function initAudio(){
   conv.connect(wet); wet.connect(actx.destination);
   dry.__conv = conv;
 }
-function pluck(freq, gain){
+function pluck(freq, gain, at = 0, decay = 1.5){
   if (!soundOn || !actx || actx.state !== 'running') return;
-  const t0 = actx.currentTime, decay = 1.5;
+  const t0 = actx.currentTime + at;
   const env = actx.createGain();
   env.gain.setValueAtTime(.0001, t0);
   env.gain.exponentialRampToValueAtTime(gain, t0 + .006);
@@ -728,12 +913,71 @@ function pluck(freq, gain){
   });
 }
 const sndBtn = document.getElementById('snd');
+
+/* Every browser blocks an AudioContext until a real user gesture, and
+   scrolling does NOT count — only pointer, touch or key. So "on by default"
+   means: on unless switched off, armed at the first interaction. The pill
+   says "tap to start" in the gap rather than claiming sound it cannot play. */
+function paintSound(){
+  const live = soundOn && actx && actx.state === 'running';
+  sndBtn.textContent = !soundOn ? 'Sound off' : (live ? 'Sound on' : 'Sound · tap');
+  sndBtn.setAttribute('aria-pressed', String(soundOn));
+  sndBtn.classList.toggle('armed', soundOn && !live);
+}
+
+function startAudio(){
+  initAudio();
+  if (!actx) return;
+  if (!actx.__bound){ actx.__bound = true; actx.addEventListener('statechange', paintSound); }
+  if (actx.state === 'suspended') actx.resume().then(paintSound, paintSound);
+  paintSound();
+}
+
+['pointerdown', 'touchstart', 'keydown'].forEach(ev =>
+  addEventListener(ev, () => { if (soundOn) startAudio(); }, {passive: true}));
+
 sndBtn.addEventListener('click', () => {
   soundOn = !soundOn;
-  sndBtn.textContent = soundOn ? 'Sound on' : 'Sound off';
-  sndBtn.setAttribute('aria-pressed', String(soundOn));
-  if (soundOn){ initAudio(); if (actx.state === 'suspended') actx.resume(); }
+  localStorage.setItem('ye-sound', soundOn ? '1' : '0');
+  if (soundOn) startAudio();
+  else if (actx && actx.state === 'running') actx.suspend().then(paintSound, paintSound);
+  paintSound();
 });
+paintSound();
+
+/* ---------------- the opening cue ----------------
+   The loader cannot make a sound on a cold load: every browser keeps an
+   AudioContext suspended until a pointer/touch/key gesture, and neither page
+   load nor scrolling qualifies. So the loader ASKS for the gesture — tap it
+   and the animation restarts from the top with the audio in sync, which is
+   the only way to hear the intro as designed. */
+const LOADER_CUE = [
+  {t:0.70, f:293.66}, {t:0.81, f:329.63}, {t:0.88, f:392.00},
+  {t:0.93, f:440.00}, {t:0.99, f:523.25},              // the five channels
+  {t:0.77, f:146.83, g:0.30, d:1.4},                   // the note, played
+  {t:1.14, f:73.42,  g:0.42, d:1.7},                   // the mark landing
+  {t:1.14, f:146.83, g:0.22, d:1.5},
+];
+function loaderCue(){
+  if (!soundOn || !actx || actx.state !== 'running') return;
+  LOADER_CUE.forEach(c => pluck(c.f, c.g || 0.28, c.t, c.d || 0.9));
+}
+
+const ldr = window.__ldr;
+if (ldr && ldr.active){
+  const hint = document.getElementById('ldhint');
+  ldr.el.addEventListener('pointerdown', () => {
+    if (!ldr.active) return;
+    if (hint) hint.style.opacity = '0';
+    soundOn = true;
+    localStorage.setItem('ye-sound', '1');
+    initAudio();
+    const ready = (actx && actx.state === 'suspended') ? actx.resume() : Promise.resolve();
+    // resume() is async — restarting before it settles would leave loaderCue()
+    // seeing state 'suspended' and returning silently
+    ready.then(() => { ldr.restart(); loaderCue(); paintSound(); }, paintSound);
+  }, {once: true});
+}
 
 /* ---------------- reveals ---------------- */
 const io = 'IntersectionObserver' in window
@@ -758,15 +1002,19 @@ const players = [...document.querySelectorAll('.track')].map(card => {
   const P = { card, cv, ctx2d: cv.getContext('2d'), btn, timeEl, stateEl, audio,
               an:null, bins:null, ok:true };
 
-  audio.addEventListener('error', () => {
-    P.ok = false; btn.disabled = true; stateEl.textContent = 'No file';
-    if (!card.querySelector('.missing')){
-      const m = document.createElement('span');
-      m.className = 'missing';
-      m.textContent = 'Drop the mp3 at ' + card.dataset.src;
-      card.querySelector('.ctl').appendChild(m);
-    }
-  });
+  function markMissing(){
+    if (!P.ok) return;
+    P.ok = false; btn.disabled = true; stateEl.textContent = 'Unavailable';
+    // developer hint goes to the console, not into the visitor's UI
+    console.info('[player] no audio at ' + card.dataset.src + ' — drop the mp3 there to make this card live.');
+  }
+  audio.addEventListener('error', markMissing);
+  // preload is 'none', so the audio element never reports a 404 until someone
+  // presses play. Probe up front instead of showing an enabled button that
+  // dead-ends on click.
+  fetch(card.dataset.src, {method:'HEAD'})
+    .then(r => { if (!r.ok) markMissing(); })
+    .catch(markMissing);
   audio.addEventListener('timeupdate', () => {
     const s = Math.floor(audio.currentTime);
     timeEl.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
@@ -798,29 +1046,79 @@ function stop(P){
   P.stateEl.textContent = 'Idle';
   if (playingCard === P) playingCard = null;
 }
+const BARS = 30;
+// A resting meter is a flat row of stubs, which left 83% of the box empty and
+// read as dead space. Idle instead draws a dim static waveform — deterministic
+// per card, so it never flickers — which fills the frame and looks like an
+// unplayed track. Playing swaps it for the real spectrum.
+players.forEach((P, k) => {
+  P.idle = Array.from({length: BARS}, (_, i) =>
+    0.30 + 0.52 * Math.abs(Math.sin(i * 0.9 + k * 2.1) * Math.cos(i * 0.31 + k)));
+});
+
 function drawMeters(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   for (const P of players){
     const { cv, ctx2d } = P;
-    const w = cv.clientWidth, h = 88;
-    if (cv.width !== w) cv.width = w;
+    const wCss = cv.clientWidth, hCss = cv.clientHeight;
+    if (!wCss || !hCss) continue;
+    // buffer must track the CSS box, or the bars get vertically squashed
+    const bw2 = Math.round(wCss * dpr), bh2 = Math.round(hCss * dpr);
+    if (cv.width !== bw2 || cv.height !== bh2){ cv.width = bw2; cv.height = bh2; }
+    const w = cv.width, h = cv.height;
     ctx2d.clearRect(0, 0, w, h);
-    const N = 30, gap = 3, bw = (w - gap*(N-1)) / N;
+    const gap = 3 * dpr, bw = (w - gap * (BARS - 1)) / BARS;
     const live = playingCard === P && P.an;
     if (live) P.an.getByteFrequencyData(P.bins);
-    for (let i = 0; i < N; i++){
+    ctx2d.fillStyle = live ? '#E9C846' : 'rgba(242,237,225,.20)';
+    for (let i = 0; i < BARS; i++){
       // log-ish frequency mapping — a real spectrum falls left to right
-      const idx = Math.floor(Math.pow(i / N, 1.7) * P_binCount(P));
-      const v = live ? P.bins[idx] / 255 : 0.045;
-      const bh = Math.max(2, v * h);
-      ctx2d.fillStyle = live ? '#E9C846' : 'rgba(242,237,225,.16)';
-      ctx2d.fillRect(i * (bw + gap), h - bh, bw, bh);
+      const idx = Math.floor(Math.pow(i / BARS, 1.7) * P_binCount(P));
+      const v = live ? P.bins[idx] / 255 : P.idle[i];
+      const barH = Math.max(2 * dpr, v * h);
+      ctx2d.fillRect(i * (bw + gap), h - barH, bw, barH);
     }
   }
 }
 function P_binCount(P){ return P.an ? P.an.frequencyBinCount : 128; }
 
+/* ---------------- chapter photos ----------------
+   Promote a slot to a real photo only once the file actually loads, so an
+   empty slot never renders as a broken image. */
+/* A fan of photos: tap cycles the top card to the back. Kept as <button>s so
+   it is reachable by keyboard, which a div stack would not be. */
+document.querySelectorAll('[data-fan]').forEach(fan => {
+  const cards = [...fan.querySelectorAll('.fan-card')];
+  const count = fan.closest('.media').querySelector('.fan-count');
+  let order = cards.map((_, i) => i);
+  function paint(){
+    order.forEach((cardIdx, pos) => {
+      const c = cards[cardIdx];
+      c.style.setProperty('--i', pos);
+      c.style.zIndex = String(cards.length - pos);
+      c.tabIndex = pos === 0 ? 0 : -1;
+      c.classList.toggle('top', pos === 0);
+    });
+    if (count) count.textContent = cards.length > 1
+      ? (order[0] + 1) + ' / ' + cards.length : '';
+  }
+  if (cards.length > 1){
+    fan.addEventListener('click', () => { order.push(order.shift()); paint(); });
+  }
+  paint();
+});
+
+document.querySelectorAll('[data-img]').forEach(f => {
+  const probe = new Image();
+  probe.onload = () => {
+    f.style.backgroundImage = 'url("' + f.dataset.img + '")';
+    f.classList.add('has-img');
+  };
+  probe.src = f.dataset.img;
+});
+
 /* ---------------- journey metrics ---------------- */
-let jTop = 0, jLen = 1, actEnd = 0, copyRight = 0;
+let jTop = 0, jLen = 1, actEnd = 0, copyRight = 0, workTop = 0, chapBounds = [];
 function metrics(){
   const chs = document.querySelectorAll('.chapter');
   const first = document.getElementById('intro');
@@ -828,6 +1126,8 @@ function metrics(){
   jTop = first.offsetTop;
   jLen = Math.max(1, (last.offsetTop + last.offsetHeight) - jTop);
   actEnd = last.offsetTop + last.offsetHeight;
+  workTop = (document.getElementById('work') || last).offsetTop;
+  chapBounds = chapterEls.map(el => [el.offsetTop, el.offsetTop + el.offsetHeight]);
   // right edge of the widest text block, so the transport never draws
   // a rule straight through the headline
   copyRight = 0;
@@ -869,14 +1169,30 @@ function frame(now){
   // once the journey is over the instrument retires so the commercial
   // half of the page can be read without strings running through it
   const past = scrollY > actEnd - H*0.5;
-  rig.style.opacity = past ? (mob() ? '.12' : '.16') : (mob() ? '.4' : '1');
+  // the exit ramp, needed here so the rig dims WITH the mark's fold rather
+  // than snapping darker halfway through it
+  const outMix = clamp01((scrollY - (actEnd - H * 0.45)) / (H * 0.75));
+  const rigLive = mob() ? 0.40 : 1, rigDim = mob() ? 0.12 : 0.16;
+  rig.style.opacity = (rigLive + (rigDim - rigLive) * outMix).toFixed(3);
   headEl.style.display = past ? 'none' : 'flex';
   ruler.style.opacity = past ? '0' : '1';
+  // The toggle needs its OWN, earlier threshold. `past` is tuned to keep the
+  // instrument alive until the mark finishes converging at the end of the
+  // journey, which leaves the pill sitting opaque on the first track card for
+  // ~300px. Retire it the moment any of the work section is on screen.
+  sndBtn.classList.toggle('gone', scrollY + H > workTop + 40);
 
-  const secs = Math.floor(p * LAST * 60);
+  const secs = Math.floor(p * chapterEls.length * 60);
   document.getElementById('tc').textContent =
     String(Math.floor(secs/60)).padStart(2,'0') + ':' + String(secs%60).padStart(2,'0');
-  ticks.forEach((d,k) => d.classList.toggle('on', k === activeCh));
+  // which chapter is under the playhead right now
+  const probe = scrollY + headY;
+  let curCh = 0;
+  for (let k = 0; k < chapBounds.length; k++){
+    if (probe >= chapBounds[k][0] && probe < chapBounds[k][1]){ curCh = k; break; }
+    if (probe >= chapBounds[k][1]) curCh = k;
+  }
+  ticks.forEach((d,k) => d.classList.toggle('on', k === curCh));
 
   const count = lerp(A.count,B.count,f), spread = lerp(A.spread,B.spread,f);
   const amp = lerp(A.amp,B.amp,f), freq = lerp(A.freq,B.freq,f), drift = lerp(A.drift,B.drift,f);
@@ -886,21 +1202,48 @@ function frame(now){
   // the transport is exactly as wide as the instrument currently is, and
   // on desktop it starts clear of the copy column
   const hw = Math.max(120, spread * band + 96);
-  const hLeft = mob() ? W - 178 : Math.max(cx - hw, copyRight + 36);
-  headEl.style.top = (headY - 6) + 'px';
+  // mobile: timecode only, parked under the top bar. At headY it sits on the
+  // last line of the headline (copy is full-width there, so there is no gap
+  // to place it in) and there is no rule to anchor it to anyway.
+  const hLeft = mob() ? W - 96 : Math.max(cx - hw, copyRight + 36);
+  headEl.style.top = (mob() ? 70 : headY - 6) + 'px';
   headEl.style.left = hLeft + 'px';
   headEl.style.width = mob()
-    ? '164px'
+    ? '80px'
     : Math.max(140, Math.min(cx + hw, W - 62) - hLeft) + 'px';
 
   const endMix = Math.min(1, Math.max(0, (t - (LAST - 0.55)) / 0.55));
-  headEl.style.opacity = (1 - endMix*0.9).toFixed(3);
+
+  /* ---- cue the mark ---------------------------------------------------
+     Scroll picks the moment; the animation owns the timing. Scrolling back
+     up before the cue point plays the exit take, so it is never cut off.
+     Computed here rather than at the render site so the strings can recede
+     on the SAME timeline — otherwise the flower blooms on a cue while the
+     strings are still fading on scroll, and the two drift apart. */
+  const wantMark = t > LAST - 0.42 && scrollY < actEnd - H * 0.30;
+  if (wantMark && markPhase !== 'in' && markPhase !== 'open'){
+    markPhase = 'in'; markT0 = now;
+  } else if (!wantMark && (markPhase === 'in' || markPhase === 'open')){
+    markPhase = 'out'; markT0 = now;
+  }
+  if (markPhase === 'in'  && now - markT0 >= MARK_IN_MS)  markPhase = 'open';
+  if (markPhase === 'out' && now - markT0 >= MARK_OUT_MS) markPhase = 'hidden';
+
+  const pIn  = markPhase === 'in'  ? clamp01((now - markT0) / MARK_IN_MS)
+             : (markPhase === 'open' || markPhase === 'out') ? 1 : 0;
+  const pOut = markPhase === 'out' ? clamp01((now - markT0) / MARK_OUT_MS)
+             : markPhase === 'hidden' ? 1 : 0;
+
+  // strings clear the stage for the mark, and come back if it plays its exit
+  const veil = Math.max(endMix, pIn * (1 - pOut));
+
+  headEl.style.opacity = (1 - Math.max(endMix, pIn) * 0.9).toFixed(3);
 
   for (let s = 0; s < SLOTS; s++){
     const st = strings[s];
     const slotPos = c => (c <= 1 ? 0 : (Math.min(s, c-1)/(c-1))*2 - 1);
     const pos = lerp(s < A.count ? slotPos(A.count) : 0, s < B.count ? slotPos(B.count) : 0, f);
-    const op  = lerp(s < A.count ? 1 : 0, s < B.count ? 1 : 0, f) * (1 - endMix);
+    const op  = lerp(s < A.count ? 1 : 0, s < B.count ? 1 : 0, f) * (1 - veil);
     st.x = cx + pos * spread * band;
     st.vib *= Math.pow(0.955, dt/16.7);
     if (op < 0.01){ st.el.setAttribute('opacity','0'); continue; }
@@ -938,11 +1281,28 @@ function frame(now){
     if (note.y > H+40 || note.y < -80){ note.el.remove(); notes.splice(n,1); }
   }
 
-  if (endMix > 0.001 && !past){
+  if (pIn > 0 && pOut < 1){
     // the mark spans 96 user units tip-to-tip
-    const sc = (Math.min(W,H) * (mob() ? .34 : .30) / 96) * (0.82 + 0.18*endMix);
-    mark.setAttribute('opacity', endMix.toFixed(3));
-    mark.setAttribute('transform', `translate(${cx} ${headY}) scale(${sc.toFixed(3)})`);
+    const sc = (Math.min(W,H) * (mob() ? .34 : .30) / 96);
+    const lift = easeInCubic(pOut) * H * 0.10;      // drifts up as it closes
+    mark.setAttribute('opacity', (1 - pOut * 0.25).toFixed(3));
+    mark.setAttribute('transform',
+      `translate(${cx.toFixed(1)} ${(headY - lift).toFixed(1)}) scale(${sc.toFixed(3)})`);
+
+    markPetals.forEach((p, i) => {
+      const open  = easeOutBack(stagger(pIn, i));
+      // fold in the reverse order they opened, so it closes like a flower
+      const close = easeInCubic(stagger(pOut, 4 - i));
+      const s = Math.max(0, open * (1 - close));
+      // swing into place on the way in, and back out again on the way out
+      const spin = (1 - open) * -52 + close * 34;
+      p.el.setAttribute('transform', `rotate(${(p.r + spin).toFixed(2)}) scale(${s.toFixed(4)})`);
+    });
+
+    // the centre lands after the petals and is the last thing to go
+    const coreIn  = easeOutBack(clamp01((pIn - 0.42) / 0.58));
+    const coreOut = easeInCubic(clamp01((pOut - 0.28) / 0.72));
+    core.setAttribute('transform', `scale(${Math.max(0, coreIn * (1 - coreOut)).toFixed(4)})`);
   } else mark.setAttribute('opacity','0');
 
   // the nav mark doubles as a scroll indicator: a quarter turn top to bottom
