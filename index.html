@@ -771,9 +771,19 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
 /* ============ MOBILE ============ */
 @media (max-width:860px){
   :root{--gut:20px}
-  /* the instrument moves behind the copy and steps right back, so text
-     stays readable on a small screen instead of competing with strings */
-  #rig{opacity:.4}
+  /* The instrument no longer sits behind the copy at all — the renderer
+     parks it in a column down the right edge — so it can come back up from
+     the .4 it was dimmed to while it was competing with the words. */
+  #rig{opacity:.6}
+  /* The one thing that still cannot avoid the copy is the mark, which is a
+     third of the viewport wide. It gets the screen to itself instead.
+     (0,3,0) beats [data-reveal].in at (0,2,0), so this wins over the
+     reveal's opacity without needing !important.
+     No transition rule here on purpose: .copy carries [data-reveal], whose
+     own `opacity .55s ease` already covers the fade. Adding one would have
+     replaced that shorthand and silently dropped the transform half of the
+     entrance animation. */
+  .mark-open .chapter .copy{opacity:.1}
   /* Same problem, same fix, for the ground. On desktop the wash is kept in
      the right half, clear of the copy column — but here the copy is
      full-width (see .copy max-width:none below), so it runs straight under
@@ -798,16 +808,31 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   #topbar .wordmark{min-height:44px}
   #snd{right:16px;bottom:16px}
   #topbar .inner{padding:11px var(--gut)}
-  #topbar .wordmark span{font-size:17px}
   /* drop the section links before they wrap the bar to two rows — the
      Book pill must survive at every width, the links are expendable */
   #topbar .links{display:none}
   #topbar .book{padding:10px 16px;font-size:13px}
+
+  /* The bar must never become two rows. Wrapping was the old safety valve;
+     it is a worse outcome than anything it was protecting against, because
+     a 123px bar then sits over the page at every scroll position.
+     Order of sacrifice, poorest to most important: section links (already
+     gone above), then the wordmark TEXT, then nothing — the jasmine, the
+     theme toggle and the Book pill all survive to the narrowest phone. */
+  #topbar .inner{flex-wrap:nowrap;gap:12px}
+  #topbar .wordmark{min-width:0}
+  /* and if the name is long enough to squeeze the pill even so, cut it with
+     an ellipsis rather than let it push anything off the edge */
+  #topbar .wordmark span{font-size:17px;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* 67px bar + clearance. The theme toggle is a 44px tap target, which made
      the bar 6px taller than the 62px this used to be — at that value an
      in-page anchor landed underneath the bar. */
   html{scroll-padding-top:74px}
-  #intro,.chapter{padding-left:var(--gut);padding-right:var(--gut)}
+  /* The right side is the instrument's column now. 64px covers the strings
+     at full spread plus their wobble, so a line of text never runs under
+     one. It costs the reading column about four characters. */
+  #intro,.chapter{padding-left:var(--gut);padding-right:calc(var(--gut) + 64px)}
   #intro h1{font-size:clamp(36px,10vw,54px);max-width:none}
   .chapter{padding-top:7vh;padding-bottom:7vh}
   /* ch01 carries four fan cards and three paragraphs; at 100% width the
@@ -830,6 +855,14 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
 @media (max-width:400px){
   #intro h1{font-size:32px}
   .chapter h2{font-size:26px}
+}
+/* 344px, not 400: a 390px phone still has ~138px of slack with the name in,
+   and dropping it there was throwing away branding for nothing. Below this
+   the name would be truncated to a stub anyway, and a cut-off "Yasmin E…"
+   is worse than no name at all — the jasmine carries it, and the name is
+   the first thing in the hero regardless. */
+@media (max-width:344px){
+  #topbar .wordmark span{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -1710,6 +1743,7 @@ stage.appendChild(mark);
    finger — this one moment does not. */
 const MARK_IN_MS = 1150, MARK_OUT_MS = 850;
 let markPhase = 'idle';   // idle -> in -> open -> out -> hidden
+let markCls = false;      // mirrors the .mark-open class, so it is written once
 let markT0 = 0;
 
 const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
@@ -2182,8 +2216,31 @@ function frame(now){
 
   const count = lerp(A.count,B.count,f), spread = lerp(A.spread,B.spread,f);
   const amp = lerp(A.amp,B.amp,f), freq = lerp(A.freq,B.freq,f), drift = lerp(A.drift,B.drift,f);
-  const cx = W * (mob() ? 0.5 : 0.68);
-  const band = Math.min(W * (mob() ? 0.82 : 0.52), 520);
+  /* `endMix` is needed by cx below, so it is computed here rather than at
+     its old spot further down — it only depends on t, which is already in
+     hand. Nothing else about it changed. */
+  const endMix = Math.min(1, Math.max(0, (t - (LAST - 0.55)) / 0.55));
+
+  /* Where the instrument lives.
+
+     Desktop puts it at 68% — to the right of the 44ch copy column, beside
+     the words. Mobile used to put it at 50%, but the copy is full-width
+     there, so 50% is not "beside" anything: it drew the strings straight
+     down the middle of the paragraph, with the notes landing on the
+     letters. That is the whole of why the phone looked busy.
+
+     So on a phone the strings get a reserved column down the right edge,
+     34px in, and the copy stops short of it (see the matching padding-right
+     in the mobile block). Fixed pixels rather than a percentage, so the
+     column is the same width on a 320 and a 430 and the copy only has to
+     give up what the strings actually occupy. */
+  const cxRest = mob() ? W - 34 : W * 0.68;
+  /* As the journey closes, the strings come out of the margin and gather in
+     the centre, so the mark blooms where they meet. Without this the mark
+     would open around a point 34px from the right edge and sit half off the
+     screen — it spans about a third of the viewport. */
+  const cx = mob() ? lerp(cxRest, W * 0.5, endMix) : cxRest;
+  const band = mob() ? lerp(44, W * 0.34, endMix) : Math.min(W * 0.52, 520);
 
   // the transport is exactly as wide as the instrument currently is, and
   // on desktop it starts clear of the copy column
@@ -2197,8 +2254,6 @@ function frame(now){
   headEl.style.width = mob()
     ? '80px'
     : Math.max(140, Math.min(cx + hw, W - 62) - hLeft) + 'px';
-
-  const endMix = Math.min(1, Math.max(0, (t - (LAST - 0.55)) / 0.55));
 
   /* ---- cue the mark ---------------------------------------------------
      Scroll picks the moment; the animation owns the timing. Scrolling back
@@ -2214,6 +2269,21 @@ function frame(now){
   }
   if (markPhase === 'in'  && now - markT0 >= MARK_IN_MS)  markPhase = 'open';
   if (markPhase === 'out' && now - markT0 >= MARK_OUT_MS) markPhase = 'hidden';
+
+  /* On a phone the mark has nowhere to bloom except over the words — it
+     spans about a third of the viewport and the copy is full-width, so
+     unlike the desktop there is no column beside the text to put it in.
+     Rather than draw a flower across the paragraph, the copy steps back
+     while the mark is open and comes back when it folds. Content-
+     independent on purpose: she can add chapters and photos without this
+     needing to know where anything sits.
+     Latched, because this runs every frame and writing the attribute
+     sixty times a second to say the same thing is pure churn. */
+  const wantMarkCls = mob() && (markPhase === 'in' || markPhase === 'open');
+  if (wantMarkCls !== markCls){
+    markCls = wantMarkCls;
+    document.documentElement.classList.toggle('mark-open', wantMarkCls);
+  }
 
   const pIn  = markPhase === 'in'  ? clamp01((now - markT0) / MARK_IN_MS)
              : (markPhase === 'open' || markPhase === 'out') ? 1 : 0;
