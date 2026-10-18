@@ -125,6 +125,29 @@ details.sec > summary:hover{background:rgba(242,237,225,.03)}
 .fld input:not([type=checkbox]):focus,.fld textarea:focus{border-color:var(--acc)}
 /* not scoped to .fld — list fields carry hints too */
 .hint{display:block;color:var(--dim);font-size:12px;line-height:1.5;margin-top:5px;max-width:58ch}
+/* ---------- colour pickers ----------
+   Selectors here carry .fld deliberately. The generic field rule above is
+   `.fld input:not([type=checkbox])` — (0,2,1) — so a plain `.colrow .swatch`
+   at (0,2,0) loses to it, and the swatch inherits width:100% and stretches
+   across the pane, shoving the hex box out of sight. Matching its .fld and
+   adding the element name puts these at (0,3,1), which is unambiguous
+   rather than relying on source order. */
+.colrow{display:flex;align-items:center;gap:10px}
+/* the native swatch draws its own chrome; strip it back to just the colour */
+.fld .colrow input.swatch{
+  width:42px;flex:none;height:34px;padding:0;cursor:pointer;
+  background:none;border:1px solid var(--line);border-radius:6px}
+.fld .colrow input.swatch::-webkit-color-swatch-wrapper{padding:2px}
+.fld .colrow input.swatch::-webkit-color-swatch{border:0;border-radius:4px}
+.fld .colrow input.swatch::-moz-color-swatch{border:0;border-radius:4px}
+/* min-width:0 or the hex box refuses to shrink below its content width */
+.fld .colrow input.hex{flex:1 1 auto;min-width:0;width:auto;
+  font:var(--mono);letter-spacing:.06em;text-transform:lowercase}
+.colrow .cbadge{flex:none;min-width:54px;text-align:right;font:var(--mono);font-size:11px;
+  letter-spacing:.06em;color:var(--dim)}
+.colrow .cbadge.c-ok{color:var(--good)}
+.colrow .cbadge.c-warn{color:var(--acc)}
+.colrow .cbadge.c-bad{color:var(--bad)}
 .list > .hint{margin:-4px 0 9px}
 
 .sw{display:flex;align-items:flex-start;gap:11px;margin-bottom:15px;cursor:pointer}
@@ -510,6 +533,13 @@ async function boot(){
       return;
     }
   }
+  /* A content.js published before the colour section existed has no theme
+     block. Fill it in on BOTH sides, not just the draft — backfilling only
+     the draft would open the editor already showing unsaved changes for
+     something she never touched. The values are the same as the ones baked
+     into index.html's stylesheet, so a file with no block and a file with
+     the defaults render identically either way. */
+  ensureTheme(live);
   baseline = clone(live);
   draft = clone(live);
 
@@ -527,6 +557,9 @@ async function boot(){
       }
     }
   } catch(e){}
+
+  // a resumed draft predates the colour section just as a published file can
+  ensureTheme(draft);
 
   // the draft has to be in localStorage before the frame starts loading,
   // or the first preview renders the published copy instead
@@ -757,8 +790,66 @@ const SCHEMA = [
       { p:'book.form.emailLabel', type:'text', label:'Form — email field label' },
       { p:'book.form.messageLabel', type:'text', label:'Form — message field label' },
       { p:'book.form.submitLabel', type:'text', label:'Form — button text' }
+    ]},
+
+  { id:'colours', title:'Colours', preview:{sel:'#intro'},
+    note:'Six colours per theme; the site works out the rest — the softer ' +
+         'greys, the hover states, the shade a small label needs to stay ' +
+         'readable. The number beside each one is how strongly it stands ' +
+         'out from that theme’s background: green is clear at any size, ' +
+         'amber is fine for big text, red means the site will darken it a ' +
+         'lot to keep it legible. The colours the page moves through as you ' +
+         'scroll are set in the design and are not edited here.',
+    fields:[
+      { p:'theme.light.bg',    type:'color', label:'Light theme — page background' },
+      { p:'theme.light.text',  type:'color', label:'Light theme — text', against:'theme.light.bg' },
+      { p:'theme.light.acc',   type:'color', label:'Light theme — main colour', against:'theme.light.bg',
+        hint:'Buttons, prices, links. Used for fills at full strength and darkened automatically where it has to carry small text.' },
+      { p:'theme.light.acc2',  type:'color', label:'Light theme — second colour', against:'theme.light.bg',
+        hint:'The photo of you at the desk, the first rate card, the playing meter.' },
+      { p:'theme.light.acc3',  type:'color', label:'Light theme — third colour', against:'theme.light.bg',
+        hint:'The middle rate card and the Services section number.' },
+      { p:'theme.light.bloom', type:'color', label:'Light theme — jasmine flower', against:'theme.light.bg', kind:'mark', want:2.6,
+        hint:'The flower in the top bar, the footer and the opening animation. Keep it light — it is the only pink on the page and it is meant to stay the flower’s own colour.' },
+
+      { p:'theme.dark.bg',     type:'color', label:'Dark theme — page background' },
+      { p:'theme.dark.text',   type:'color', label:'Dark theme — text', against:'theme.dark.bg' },
+      { p:'theme.dark.acc',    type:'color', label:'Dark theme — main colour', against:'theme.dark.bg' },
+      { p:'theme.dark.acc2',   type:'color', label:'Dark theme — second colour', against:'theme.dark.bg' },
+      { p:'theme.dark.acc3',   type:'color', label:'Dark theme — third colour', against:'theme.dark.bg' },
+      { p:'theme.dark.bloom',  type:'color', label:'Dark theme — jasmine flower', against:'theme.dark.bg', kind:'mark', want:2.6 },
+
+      { type:'action', label:'Put the original colours back',
+        confirm:'Reset every colour on both themes to the ones the site shipped with?',
+        hint:'Only touches the twelve colours above. Nothing you have written is affected.',
+        run:() => { draft.theme = JSON.parse(JSON.stringify(THEME_DEFAULTS)); } }
     ]}
 ];
+
+/* What "Put the original colours back" restores. Kept here rather than read
+   from the live file so that a reset is a reset — otherwise it would only
+   ever restore whatever was last published, which is not what the button
+   says and not what someone reaches for it wanting. */
+const THEME_DEFAULTS = {
+  light:{ bg:'#FBFAF7', text:'#2A2622', acc:'#D9A227', acc2:'#C4714B', acc3:'#5C87AC', bloom:'#EFA9BC' },
+  dark: { bg:'#1E1611', text:'#F7F1E4', acc:'#E9C846', acc2:'#E8734A', acc3:'#C4566B', bloom:'#EFA9BC' }
+};
+
+/* Fill in anything missing, key by key rather than wholesale — a file that
+   carries half a theme block (hand-edited, or written by an older editor)
+   should keep the colours it does have. */
+function ensureTheme(obj){
+  if (!obj) return;
+  if (!obj.theme || typeof obj.theme !== 'object') obj.theme = {};
+  Object.keys(THEME_DEFAULTS).forEach(mode => {
+    const def = THEME_DEFAULTS[mode];
+    if (!obj.theme[mode] || typeof obj.theme[mode] !== 'object') obj.theme[mode] = {};
+    Object.keys(def).forEach(k => {
+      if (typeof obj.theme[mode][k] !== 'string' || !obj.theme[mode][k].trim())
+        obj.theme[mode][k] = def[k];
+    });
+  });
+}
 
 /* ============================================================ RENDERING */
 function renderForm(){
@@ -800,8 +891,122 @@ function field(base, f, ctx, open){
     case 'list':     return listField(path, f, ctx, open);
     case 'strings':  return stringsField(path, f, ctx);
     case 'optional': return optionalField(path, f, ctx, open);
+    case 'color':    return colorField(path, f, ctx);
+    case 'action':   return actionField(f, ctx);
     default:         return textField(path, f, ctx, false);
   }
+}
+
+/* ---------- colour ----------
+   A swatch and a hex box, kept in step, plus a live contrast reading
+   against that theme's background.
+
+   The reading is the whole reason this is not just an <input type=color>.
+   index.html derives twenty-odd tokens from these six and clamps the ones
+   that carry small text, so nothing she picks can make a label unreadable
+   — but it CAN leave her wondering why the colour she chose came out
+   darker than the swatch. Showing the ratio explains that before it
+   happens: red means "the page will darken this to keep it legible". */
+function srgb(v){ v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }
+function hexRGB(h){
+  h = String(h || '').trim().replace(/^#/, '');
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+  const n = parseInt(h, 16);
+  return [n >> 16 & 255, n >> 8 & 255, n & 255];
+}
+function contrast(a, b){
+  const A = hexRGB(a), B = hexRGB(b);
+  if (!A || !B) return null;
+  const l = c => 0.2126*srgb(c[0]) + 0.7152*srgb(c[1]) + 0.0722*srgb(c[2]);
+  const x = l(A), y = l(B);
+  return (Math.max(x,y) + 0.05) / (Math.min(x,y) + 0.05);
+}
+
+function colorField(path, f, ctx){
+  const wrap = el('label', 'fld');
+  wrap.appendChild(el('span', 'lab', f.label));
+
+  const row = el('div', 'colrow');
+  const sw = document.createElement('input');
+  sw.type = 'color';
+  sw.className = 'swatch';
+  const tx = document.createElement('input');
+  tx.type = 'text';
+  tx.className = 'hex';
+  tx.spellcheck = false;
+  tx.setAttribute('aria-label', f.label + ' (hex code)');
+  const badge = el('span', 'cbadge');
+
+  const current = () => String(get(draft, path) || '').trim();
+
+  function readout(){
+    // f.against names a sibling field holding this theme's background
+    if (!f.against){ badge.textContent = ''; badge.className = 'cbadge'; return; }
+    const r = contrast(current(), String(get(draft, f.against) || ''));
+    if (r === null){ badge.textContent = '—'; badge.className = 'cbadge'; return; }
+    /* The bar depends on the job. A colour that carries words owes 4.5:1;
+       the jasmine is a mark, not a label, and judging it as text painted a
+       deliberately pale flower red. */
+    const want = f.want || 4.5;
+    badge.textContent = r.toFixed(1) + ':1';
+    /* c- prefixed: a bare .warn is already a bordered callout in this sheet */
+    badge.className = 'cbadge ' + (r >= want ? 'c-ok' : r >= want * 0.66 ? 'c-warn' : 'c-bad');
+    badge.title = f.kind === 'mark'
+      ? (r >= want ? 'Stands out well at the small sizes the flower is drawn at.'
+         : r >= want * 0.66 ? 'A little faint. The small flowers get deepened to compensate.'
+         : 'Very close to the background — the small flowers will be deepened a lot to stay visible.')
+      : (r >= want ? 'Reads clearly at any size.'
+         : r >= want * 0.66 ? 'Fine for big text and fills. Small labels get darkened automatically.'
+         : 'Too close to the background — anything small in this colour gets darkened a lot to stay readable.');
+  }
+  function paint(v){
+    const rgb = hexRGB(v);
+    if (rgb) sw.value = '#' + rgb.map(n => n.toString(16).padStart(2,'0')).join('');
+    readout();
+  }
+
+  tx.value = current();
+  paint(tx.value);
+
+  sw.addEventListener('input', () => {
+    tx.value = sw.value;
+    set(draft, path, sw.value);
+    readout();
+    touched();
+  });
+  tx.addEventListener('input', () => {
+    set(draft, path, tx.value.trim());
+    paint(tx.value);
+    touched();
+  });
+  tx.addEventListener('focus', () => jogPreview(ctx));
+  sw.addEventListener('focus', () => jogPreview(ctx));
+
+  row.appendChild(sw);
+  row.appendChild(tx);
+  row.appendChild(badge);
+  wrap.appendChild(row);
+  if (f.hint) wrap.appendChild(el('span', 'hint', f.hint));
+  return wrap;
+}
+
+/* a plain button inside the form — used for "put the colours back" */
+function actionField(f, ctx){
+  const wrap = el('div', 'fld');
+  const b = el('button', 'btn small');
+  b.type = 'button';
+  b.textContent = f.label;
+  b.addEventListener('click', () => {
+    if (f.confirm && !confirm(f.confirm)) return;
+    f.run();
+    renderForm();
+    touched();
+    jogPreview(ctx);
+  });
+  wrap.appendChild(b);
+  if (f.hint) wrap.appendChild(el('span', 'hint', f.hint));
+  return wrap;
 }
 
 function grow(t){

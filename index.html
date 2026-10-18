@@ -837,6 +837,139 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   .scrollcue,#snd.armed{animation:none}
 }
 </style>
+<script>
+/* ===========================================================================
+   CUSTOM PALETTE
+
+   content.js may carry a `theme` block holding SIX colours per theme —
+   background, text, and three accents, plus the jasmine. Everything else in
+   the token set is derived from those here, which is the point: the editor
+   only ever has to ask for colours a person can actually picture, and the
+   twenty-odd dependent tokens stay consistent and legible on their own.
+
+   This has to run here — after the stylesheet, before first paint. After,
+   so that equal-specificity rules win on order; before paint, or the page
+   renders in the built-in palette and visibly repaints into hers.
+
+   Derivation is driven by one idea: every dependent token is the source
+   colour moved toward, or away from, the background. That single rule is
+   what lets the same code serve a light and a dark theme without knowing
+   which it is — "away from the background" is darker on ivory and lighter
+   on espresso, and both are what you want.
+
+   The contrast clamps are not decoration. A label at 42% toward the
+   background lands at 3.8:1 on the default light palette, under the 4.5:1
+   it owes, so `readable()` walks it back until it passes. That is why she
+   can pick an awkward colour and still end up with a page people can read.
+   =========================================================================== */
+(function(){
+  var C = window.YE_CONTENT;
+  /* the editor previews unsaved work through ?preview=1 + localStorage, and
+     the palette has to follow the draft or she cannot see what she picked */
+  if (/[?&]preview=1/.test(location.search)){
+    try { var d = localStorage.getItem('ye-draft-content'); if (d) C = JSON.parse(d); }
+    catch(e){}
+  }
+  var T = C && C.theme;
+  if (!T || (!T.light && !T.dark)) return;   /* no block: keep the built-ins */
+
+  function toRGB(h){
+    if (typeof h !== 'string') return null;
+    h = h.trim().replace(/^#/, '');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    if (!/^[0-9a-f]{6}$/i.test(h)) return null;   /* mistyped: fall back */
+    var n = parseInt(h, 16);
+    return [n >> 16 & 255, n >> 8 & 255, n & 255];
+  }
+  var hex = function(c){
+    return '#' + c.map(function(v){
+      return Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0');
+    }).join('');
+  };
+  function chan(v){ v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }
+  function lum(c){ return 0.2126*chan(c[0]) + 0.7152*chan(c[1]) + 0.0722*chan(c[2]); }
+  function ratio(a, b){
+    var x = lum(a), y = lum(b);
+    return (Math.max(x,y) + 0.05) / (Math.min(x,y) + 0.05);
+  }
+  function mix(a, b, t){
+    return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t];
+  }
+  /* Step `c` away from `bg` until it clears `want`. Away means darker on a
+     light ground and lighter on a dark one, so this is the same call in
+     both themes. Returns the extreme if even that cannot reach the target —
+     a colour that fails is still better than one that is invisible.
+
+     The extremes are a warm near-black and a warm near-white rather than
+     #000 and #fff on purpose. Mixing toward pure black drains the warmth
+     out of everything it touches, and the derived labels came out visibly
+     greyer than the rest of the palette. */
+  var DOWN = [26,18,12], UP = [255,253,248];
+  function readable(c, bg, want){
+    var away = lum(bg) > 0.4 ? DOWN : UP;
+    for (var t = 0; t <= 1.0001; t += 0.04){
+      var m = mix(c, away, t);
+      if (ratio(m, bg) >= want) return m;
+    }
+    return away;
+  }
+
+  function derive(src, isDark){
+    var bg = toRGB(src.bg), text = toRGB(src.text), acc = toRGB(src.acc),
+        a2 = toRGB(src.acc2), a3 = toRGB(src.acc3), bloom = toRGB(src.bloom);
+    if (!bg || !text || !acc || !a2 || !a3 || !bloom) return null;
+
+    var white = [255,255,255];
+    var accD  = readable(acc, bg, 4.5);
+    var out = {
+      '--bg':        hex(bg),
+      /* a hair toward the text colour, so a banded section reads as a
+         different room without becoming a second background */
+      '--bg-2':      hex(mix(bg, text, isDark ? 0.03 : 0.05)),
+      /* both themes lift the raised surface toward white: pure white on a
+         light ground, a gentle step up from espresso on a dark one */
+      '--surface':   hex(mix(bg, white, isDark ? 0.045 : 1)),
+      '--text':      hex(text),
+      '--text-2':    hex(mix(text, bg, 0.18)),
+      '--text-dim':  hex(readable(mix(text, bg, 0.32), bg, 4.5)),
+      '--acc':       hex(acc),
+      '--acc-deep':  hex(accD),
+      '--acc-2':     hex(a2),
+      '--acc-2-deep':hex(readable(a2, bg, 4.5)),
+      '--acc-3':     hex(a3),
+      '--acc-3-deep':hex(readable(a3, bg, 4.5)),
+      /* whichever of white or the page ground reads better ON the accent —
+         white over light-theme bronze, espresso over dark-theme gold */
+      '--on-acc':    hex(ratio(white, accD) >= ratio(bg, accD) ? white : bg),
+      '--bloom':     hex(bloom),
+      /* the 17–22px marks need more separation than the big bloom does, but
+         not text-level contrast — they are a logo, not a label */
+      '--bloom-mark':hex(readable(bloom, bg, 2.6)),
+      '--bg-rgb':    bg.map(Math.round).join(' '),
+      '--text-rgb':  text.map(Math.round).join(' '),
+      '--acc-rgb':   acc.map(Math.round).join(' '),
+      '--acc-2-rgb': a2.map(Math.round).join(' '),
+      '--acc-3-rgb': a3.map(Math.round).join(' ')
+    };
+    return out;
+  }
+
+  function block(sel, src, isDark){
+    var o = src && derive(src, isDark);
+    if (!o) return '';                       /* bad colour: keep the built-ins */
+    var body = Object.keys(o).map(function(k){ return k + ':' + o[k]; }).join(';');
+    return sel + '{' + body + '}';
+  }
+
+  var css = block(':root', T.light, false)
+          + block(':root[data-theme="dark"]', T.dark, true);
+  if (!css) return;
+  var s = document.createElement('style');
+  s.id = 'ye-theme';
+  s.textContent = css;
+  document.head.appendChild(s);
+})();
+</script>
 </head>
 <body>
 
