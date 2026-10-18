@@ -1,5 +1,10 @@
 # Assets
 
+> **There is an easier way now.** `/editor.html` uploads photos and audio for
+> you, resizes oversized images, and wires them to the right slot — see
+> [EDITING.md](../EDITING.md). This file describes the manual route, which still
+> works: drop a file at the exact path below and the site picks it up.
+
 Drop files here and the site picks them up — no code changes needed.
 
 ## Journey photos — `assets/journey/`
@@ -22,7 +27,8 @@ loads it becomes the photo.
 
 Frames are **3:2**. Supply roughly **1200×800** so they stay sharp on
 retina screens. `.jpg` for photographs; if you use a different extension,
-update the matching `data-img` in `index.html`.
+update the matching `file` in `content.js` — or just use the editor, which
+sets it for you.
 
 ## Track audio — `assets/`
 

@@ -17,152 +17,29 @@ body{margin:0;background:#12110E;color:#F2EDE1;font-family:'Instrument Sans',sys
 a{color:#E9C846;text-decoration:none}
 a:hover{color:#F2EDE1}
 input,textarea,button{font:inherit;color:inherit}
+@keyframes petalIn{from{transform:rotate(var(--r)) scaleY(.06);opacity:0}to{transform:rotate(var(--r)) scaleY(1);opacity:1}}
 @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-
-/* ---- loading intro: level meter -> played note -> jasmine ----
-   transform-origin MUST be `0 0`. With transform-box:view-box, percentages
-   resolve against the viewBox size but ignore its -50 -50 min-x/min-y, so
-   50% pivots on the corner and every rotated petal swings off-canvas. */
-.ld-bar,.ld-pet,.ld-nhead,.ld-stem,.ld-ring,.ld-head{transform-box:view-box;transform-origin:0 0}
-
-/* ATTACK - five channels arrive, left-anchored, each a different length */
-@keyframes ldBarIn{from{transform:translateX(-124px);opacity:0}to{transform:translateX(0);opacity:1}}
-.ld-bar{animation:ldBarIn .38s cubic-bezier(.05,.8,.2,1) var(--in) both}
-
-/* TRANSPORT - constant speed; where it clears each channel's right end is
-   what triggers that channel's release, so the bloom order is geometry */
-@keyframes ldSweep{0%{transform:translateX(-46px);opacity:0}9%{opacity:1}84%{opacity:1}100%{transform:translateX(46px);opacity:0}}
-.ld-head{filter:drop-shadow(0 0 2.5px rgba(233,200,70,.55));animation:ldSweep .62s linear .46s both}
-
-/* RELEASE - a <rect> with rx=w/2, ry=h/2 renders as a true ellipse, and at
-   rx=ry=half-thickness it is a bar with round caps. One element morphs line
-   -> petal with no pointed tips; an ellipse squashed flat is always a lens.
-   Corner radii track min(w,h)/2 at every stop or it goes boxy midway, and
-   the easing is baked into the stop positions so this can run linear -
-   otherwise x/y/transform would desync from width/height. */
-@keyframes ldBloom0{
-  0%{x:-42px;y:-23.5px;width:32px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
-  8.333%{x:-31.66px;y:-32.235px;width:29.861px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(77.013deg)}
-  16.667%{x:-23.709px;y:-38.953px;width:28.216px;height:28.86px;rx:14.108px;ry:14.43px;transform:rotate(136.236deg)}
-  25%{x:-18.799px;y:-43.101px;width:27.2px;height:35.802px;rx:13.6px;ry:17.901px;transform:rotate(172.808deg)}
-  33.333%{x:-16.097px;y:-45.384px;width:26.641px;height:39.622px;rx:13.32px;ry:19.811px;transform:rotate(192.934deg)}
-  41.667%{x:-14.635px;y:-46.619px;width:26.338px;height:41.689px;rx:13.169px;ry:20.844px;transform:rotate(203.824deg)}
-  50%{x:-13.837px;y:-47.292px;width:26.173px;height:42.816px;rx:13.087px;ry:21.408px;transform:rotate(209.762deg)}
-  58.333%{x:-13.405px;y:-47.658px;width:26.084px;height:43.428px;rx:13.042px;ry:21.714px;transform:rotate(212.987deg)}
-  66.667%{x:-13.176px;y:-47.851px;width:26.037px;height:43.751px;rx:13.018px;ry:21.875px;transform:rotate(214.686deg)}
-  75%{x:-13.064px;y:-47.946px;width:26.013px;height:43.909px;rx:13.007px;ry:21.954px;transform:rotate(215.52deg)}
-  83.333%{x:-13.017px;y:-47.986px;width:26.003px;height:43.976px;rx:13.002px;ry:21.988px;transform:rotate(215.875deg)}
-  91.667%{x:-13.002px;y:-47.998px;width:26px;height:43.997px;rx:13px;ry:21.999px;transform:rotate(215.986deg)}
-  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(216deg)}
-}
-@keyframes ldBloom1{
-  0%{x:-42px;y:-12.5px;width:74px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
-  8.333%{x:-31.66px;y:-25.157px;width:56.886px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(102.684deg)}
-  16.667%{x:-23.709px;y:-34.891px;width:43.725px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(181.648deg)}
-  25%{x:-18.799px;y:-40.901px;width:35.598px;height:35.802px;rx:17.799px;ry:17.901px;transform:rotate(230.411deg)}
-  33.333%{x:-16.097px;y:-44.209px;width:31.126px;height:39.622px;rx:15.563px;ry:19.811px;transform:rotate(257.246deg)}
-  41.667%{x:-14.635px;y:-45.999px;width:28.706px;height:41.689px;rx:14.353px;ry:20.844px;transform:rotate(271.765deg)}
-  50%{x:-13.837px;y:-46.975px;width:27.386px;height:42.816px;rx:13.693px;ry:21.408px;transform:rotate(279.683deg)}
-  58.333%{x:-13.405px;y:-47.505px;width:26.67px;height:43.428px;rx:13.335px;ry:21.714px;transform:rotate(283.982deg)}
-  66.667%{x:-13.176px;y:-47.784px;width:26.292px;height:43.751px;rx:13.146px;ry:21.875px;transform:rotate(286.248deg)}
-  75%{x:-13.064px;y:-47.921px;width:26.107px;height:43.909px;rx:13.053px;ry:21.954px;transform:rotate(287.36deg)}
-  83.333%{x:-13.017px;y:-47.979px;width:26.028px;height:43.976px;rx:13.014px;ry:21.988px;transform:rotate(287.834deg)}
-  91.667%{x:-13.002px;y:-47.998px;width:26.003px;height:43.997px;rx:13.002px;ry:21.999px;transform:rotate(287.982deg)}
-  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(288deg)}
-}
-@keyframes ldBloom2{
-  0%{x:-42px;y:-1.5px;width:48px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
-  8.333%{x:-31.66px;y:-18.079px;width:40.156px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(0deg)}
-  16.667%{x:-23.709px;y:-30.829px;width:34.124px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(0deg)}
-  25%{x:-18.799px;y:-38.702px;width:30.399px;height:35.802px;rx:15.2px;ry:17.901px;transform:rotate(0deg)}
-  33.333%{x:-16.097px;y:-43.034px;width:28.349px;height:39.622px;rx:14.175px;ry:19.811px;transform:rotate(0deg)}
-  41.667%{x:-14.635px;y:-45.379px;width:27.24px;height:41.689px;rx:13.62px;ry:20.844px;transform:rotate(0deg)}
-  50%{x:-13.837px;y:-46.657px;width:26.635px;height:42.816px;rx:13.318px;ry:21.408px;transform:rotate(0deg)}
-  58.333%{x:-13.405px;y:-47.351px;width:26.307px;height:43.428px;rx:13.153px;ry:21.714px;transform:rotate(0deg)}
-  66.667%{x:-13.176px;y:-47.717px;width:26.134px;height:43.751px;rx:13.067px;ry:21.875px;transform:rotate(0deg)}
-  75%{x:-13.064px;y:-47.897px;width:26.049px;height:43.909px;rx:13.024px;ry:21.954px;transform:rotate(0deg)}
-  83.333%{x:-13.017px;y:-47.973px;width:26.013px;height:43.976px;rx:13.006px;ry:21.988px;transform:rotate(0deg)}
-  91.667%{x:-13.002px;y:-47.997px;width:26.001px;height:43.997px;rx:13.001px;ry:21.999px;transform:rotate(0deg)}
-  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(0deg)}
-}
-@keyframes ldBloom3{
-  0%{x:-42px;y:9.5px;width:66px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
-  8.333%{x:-31.66px;y:-11.001px;width:51.738px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(25.671deg)}
-  16.667%{x:-23.709px;y:-26.767px;width:40.771px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(45.412deg)}
-  25%{x:-18.799px;y:-36.502px;width:33.998px;height:35.802px;rx:16.999px;ry:17.901px;transform:rotate(57.603deg)}
-  33.333%{x:-16.097px;y:-41.86px;width:30.271px;height:39.622px;rx:15.136px;ry:19.811px;transform:rotate(64.311deg)}
-  41.667%{x:-14.635px;y:-44.759px;width:28.255px;height:41.689px;rx:14.127px;ry:20.844px;transform:rotate(67.941deg)}
-  50%{x:-13.837px;y:-46.339px;width:27.155px;height:42.816px;rx:13.578px;ry:21.408px;transform:rotate(69.921deg)}
-  58.333%{x:-13.405px;y:-47.198px;width:26.558px;height:43.428px;rx:13.279px;ry:21.714px;transform:rotate(70.996deg)}
-  66.667%{x:-13.176px;y:-47.65px;width:26.243px;height:43.751px;rx:13.122px;ry:21.875px;transform:rotate(71.562deg)}
-  75%{x:-13.064px;y:-47.872px;width:26.089px;height:43.909px;rx:13.044px;ry:21.954px;transform:rotate(71.84deg)}
-  83.333%{x:-13.017px;y:-47.967px;width:26.023px;height:43.976px;rx:13.012px;ry:21.988px;transform:rotate(71.958deg)}
-  91.667%{x:-13.002px;y:-47.996px;width:26.003px;height:43.997px;rx:13.001px;ry:21.999px;transform:rotate(71.995deg)}
-  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(72deg)}
-}
-@keyframes ldBloom4{
-  0%{x:-42px;y:20.5px;width:58px;height:3px;rx:1.5px;ry:1.5px;transform:rotate(0deg)}
-  8.333%{x:-31.66px;y:-3.923px;width:46.591px;height:17.618px;rx:8.809px;ry:8.809px;transform:rotate(51.342deg)}
-  16.667%{x:-23.709px;y:-22.705px;width:37.817px;height:28.86px;rx:14.43px;ry:14.43px;transform:rotate(90.824deg)}
-  25%{x:-18.799px;y:-34.303px;width:32.399px;height:35.802px;rx:16.199px;ry:17.901px;transform:rotate(115.205deg)}
-  33.333%{x:-16.097px;y:-40.685px;width:29.417px;height:39.622px;rx:14.709px;ry:19.811px;transform:rotate(128.623deg)}
-  41.667%{x:-14.635px;y:-44.139px;width:27.804px;height:41.689px;rx:13.902px;ry:20.844px;transform:rotate(135.883deg)}
-  50%{x:-13.837px;y:-46.022px;width:26.924px;height:42.816px;rx:13.462px;ry:21.408px;transform:rotate(139.842deg)}
-  58.333%{x:-13.405px;y:-47.044px;width:26.446px;height:43.428px;rx:13.223px;ry:21.714px;transform:rotate(141.991deg)}
-  66.667%{x:-13.176px;y:-47.583px;width:26.195px;height:43.751px;rx:13.097px;ry:21.875px;transform:rotate(143.124deg)}
-  75%{x:-13.064px;y:-47.848px;width:26.071px;height:43.909px;rx:13.036px;ry:21.954px;transform:rotate(143.68deg)}
-  83.333%{x:-13.017px;y:-47.96px;width:26.018px;height:43.976px;rx:13.009px;ry:21.988px;transform:rotate(143.917deg)}
-  91.667%{x:-13.002px;y:-47.996px;width:26.002px;height:43.997px;rx:13.001px;ry:21.999px;transform:rotate(143.991deg)}
-  100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(144deg)}
-}
-@keyframes ldFlash{from{fill:#E9C846}to{fill:#F2EDE1}}
-.ld-pet{fill:#F2EDE1;animation-duration:.58s,.52s;animation-timing-function:linear,ease-out;animation-delay:var(--bd),var(--bd);animation-fill-mode:both,forwards}
-.ld-p0{animation-name:ldBloom0,ldFlash}
-.ld-p1{animation-name:ldBloom1,ldFlash}
-.ld-p2{animation-name:ldBloom2,ldFlash}
-.ld-p3{animation-name:ldBloom3,ldFlash}
-.ld-p4{animation-name:ldBloom4,ldFlash}
-
-/* THE NOTE - played at .77s, the stem retracts into the head (scaleY toward
-   the shared 0,0 origin, so it collapses downward rather than in place);
-   the head then opens into the finished centre. One element throughout. */
-@keyframes ldStemOut{0%{transform:scaleY(1);opacity:1}40%{opacity:1}100%{transform:scaleY(0);opacity:0}}
-.ld-stem{animation:ldStemOut .34s cubic-bezier(.22,1,.28,1) .77s both}
-@keyframes ldHeadGrow{0%{rx:5.6px;ry:4.3px;transform:rotate(-20deg) scale(1)}58%{rx:10px;ry:10px;transform:rotate(0deg) scale(1.18)}100%{rx:10px;ry:10px;transform:rotate(0deg) scale(1)}}
-.ld-nhead{animation:ldHeadGrow .42s cubic-bezier(.22,1,.28,1) 1.14s both}
-/* `forwards` only + base opacity 0, else the backwards fill parks a stray
-   ring on screen for the whole first second */
-@keyframes ldRingOut{from{transform:scale(.2);opacity:.75}to{transform:scale(1.8);opacity:0}}
-.ld-ring{opacity:0;animation:ldRingOut .62s cubic-bezier(.22,1,.28,1) 1.14s forwards}
-
-.ld-name{animation:riseIn .7s cubic-bezier(.22,1,.28,1) 1.05s both}
-@keyframes ldSpread{from{opacity:0;letter-spacing:.03em}to{opacity:1;letter-spacing:.34em}}
-.ld-sub{animation:ldSpread .75s cubic-bezier(.22,1,.28,1) 1.16s both}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
 </style></helmet>
 
 <div data-loader style="position:fixed;inset:0;z-index:100;background:#12110E;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;transition:opacity .7s ease,visibility .7s">
-<svg viewBox="-50 -50 100 100" style="width:min(200px,46vw);height:min(200px,46vw)">
-<g class="ld-bar" style="--in:0s"><rect class="ld-pet ld-p0" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.70s"></rect></g>
-<g class="ld-bar" style="--in:.05s"><rect class="ld-pet ld-p1" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.99s"></rect></g>
-<g class="ld-bar" style="--in:.10s"><rect class="ld-pet ld-p2" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.81s"></rect></g>
-<g class="ld-bar" style="--in:.15s"><rect class="ld-pet ld-p3" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.93s"></rect></g>
-<g class="ld-bar" style="--in:.20s"><rect class="ld-pet ld-p4" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.88s"></rect></g>
-<rect class="ld-head" x="-0.55" y="-31" width="1.1" height="62" rx=".55" fill="#E9C846"></rect>
-<circle class="ld-ring" r="26" fill="none" stroke="#E9C846" strokeWidth="2" vectorEffect="non-scaling-stroke"></circle>
-<rect class="ld-stem" x="3.863" y="-19.2" width="1.6" height="18.44" rx=".8" fill="#E9C846"></rect>
-<ellipse class="ld-nhead" rx="10" ry="10" fill="#E9C846"></ellipse>
-</svg>
-<div style="display:flex;flex-direction:column;align-items:center;gap:9px">
-<div class="ld-name" style="font-family:'Instrument Serif',serif;font-size:38px;letter-spacing:.01em">Yasmin Eden</div>
-<div class="ld-sub" style="font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;text-transform:uppercase;color:#9A9384">Sound</div>
+<svg viewBox="-50 -50 100 100" style="width:96px;height:96px;overflow:visible"><g fill="#E9C846">
+<ellipse rx="13" ry="38" cy="-26" style="--r:0deg;animation:petalIn .72s cubic-bezier(.2,.8,.2,1) .05s both"></ellipse>
+<ellipse rx="13" ry="38" cy="-26" style="--r:72deg;animation:petalIn .72s cubic-bezier(.2,.8,.2,1) .17s both"></ellipse>
+<ellipse rx="13" ry="38" cy="-26" style="--r:144deg;animation:petalIn .72s cubic-bezier(.2,.8,.2,1) .29s both"></ellipse>
+<ellipse rx="13" ry="38" cy="-26" style="--r:216deg;animation:petalIn .72s cubic-bezier(.2,.8,.2,1) .41s both"></ellipse>
+<ellipse rx="13" ry="38" cy="-26" style="--r:288deg;animation:petalIn .72s cubic-bezier(.2,.8,.2,1) .53s both"></ellipse>
+</g></svg>
+<div style="display:flex;flex-direction:column;align-items:center;gap:9px;animation:riseIn .8s cubic-bezier(.2,.8,.2,1) .62s both">
+<div style="font-family:'Instrument Serif',serif;font-size:38px;letter-spacing:.01em">Yasmin Eden</div>
+<div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:#9A9384">Sound</div>
 </div>
 </div>
 
 <nav style="position:sticky;top:0;z-index:40;background:rgba(18,17,14,.86);backdrop-filter:blur(12px);border-bottom:1px solid rgba(242,237,225,.09)">
 <div style="max-width:1120px;margin:0 auto;padding:14px 28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 20px">
 <a href="#top" style="display:flex;align-items:center;gap:11px;color:#F2EDE1">
-<svg data-knob viewBox="-50 -50 100 100" style="width:22px;height:22px;flex:none;transition:transform .18s linear"><g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"></ellipse></g><circle r="10" fill="#E9C846"></circle></svg>
+<svg data-knob viewBox="-50 -50 100 100" style="width:22px;height:22px;flex:none;transition:transform .18s linear"><g fill="#E9C846"><ellipse rx="13" ry="38" cy="-26"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(288)"></ellipse></g></svg>
 <span style="font-family:'Instrument Serif',serif;font-size:20px">Yasmin Eden</span>
 </a>
 <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px">
@@ -179,7 +56,7 @@ input,textarea,button{font:inherit;color:inherit}
 
 <header id="top" style="position:relative;overflow:hidden;border-bottom:1px solid rgba(242,237,225,.09)">
 <svg data-bloom viewBox="-50 -50 100 100" style="position:absolute;width:min(760px,90vw);height:min(760px,90vw);right:-14%;top:-26%;opacity:.085;pointer-events:none"><g fill="#E9C846">
-<ellipse data-p rx="13" ry="22" cy="-26" transform="rotate(0)"></ellipse><ellipse data-p rx="13" ry="22" cy="-26" transform="rotate(72)"></ellipse><ellipse data-p rx="13" ry="22" cy="-26" transform="rotate(144)"></ellipse><ellipse data-p rx="13" ry="22" cy="-26" transform="rotate(216)"></ellipse><ellipse data-p rx="13" ry="22" cy="-26" transform="rotate(288)"></ellipse><circle data-p r="10"></circle>
+<ellipse data-p rx="13" ry="38" cy="-26" transform="rotate(0)"></ellipse><ellipse data-p rx="13" ry="38" cy="-26" transform="rotate(72)"></ellipse><ellipse data-p rx="13" ry="38" cy="-26" transform="rotate(144)"></ellipse><ellipse data-p rx="13" ry="38" cy="-26" transform="rotate(216)"></ellipse><ellipse data-p rx="13" ry="38" cy="-26" transform="rotate(288)"></ellipse>
 </g></svg>
 <div style="position:relative;max-width:1120px;margin:0 auto;padding:clamp(72px,13vh,140px) 28px clamp(64px,11vh,112px);display:flex;flex-direction:column;gap:30px;align-items:flex-start">
 <div data-reveal style="font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#E9C846">Mixing · Mastering · Recording</div>
@@ -239,7 +116,7 @@ input,textarea,button{font:inherit;color:inherit}
 </div>
 </section>
 
-<div style="max-width:1120px;margin:0 auto;padding:0 28px"><div style="display:flex;align-items:center;gap:16px"><span style="flex:1;height:1px;background:rgba(242,237,225,.1)"></span><svg viewBox="-50 -50 100 100" style="width:14px;height:14px;opacity:.85"><ellipse rx="13" ry="22" cy="-26" fill="#E9C846" transform="rotate(20)"></ellipse></svg><span style="flex:1;height:1px;background:rgba(242,237,225,.1)"></span></div></div>
+<div style="max-width:1120px;margin:0 auto;padding:0 28px"><div style="display:flex;align-items:center;gap:16px"><span style="flex:1;height:1px;background:rgba(242,237,225,.1)"></span><svg viewBox="-50 -50 100 100" style="width:14px;height:14px;opacity:.85"><ellipse rx="13" ry="38" cy="-26" fill="#E9C846" transform="rotate(20)"></ellipse></svg><span style="flex:1;height:1px;background:rgba(242,237,225,.1)"></span></div></div>
 
 <section id="process" style="max-width:1120px;margin:0 auto;padding:clamp(64px,9vw,104px) 28px">
 <div data-reveal style="display:flex;align-items:baseline;gap:18px;margin-bottom:44px">
@@ -390,7 +267,7 @@ input,textarea,button{font:inherit;color:inherit}
 <footer style="border-top:1px solid rgba(242,237,225,.09)">
 <div style="max-width:1120px;margin:0 auto;padding:34px 28px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between">
 <div style="display:flex;align-items:center;gap:11px">
-<svg viewBox="-50 -50 100 100" style="width:17px;height:17px"><g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"></ellipse></g><circle r="10" fill="#E9C846"></circle></svg>
+<svg viewBox="-50 -50 100 100" style="width:17px;height:17px"><g fill="#E9C846"><ellipse rx="13" ry="38" cy="-26"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(72)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(144)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(216)"></ellipse><ellipse rx="13" ry="38" cy="-26" transform="rotate(288)"></ellipse></g></svg>
 <span style="font-family:'Instrument Serif',serif;font-size:17px">Yasmin Eden Sound</span>
 </div>
 <span style="font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#9A9384">© [Year] · [City]</span>
@@ -421,7 +298,7 @@ class Component extends DCLogic {
     const hide = () => { el.style.opacity = '0'; el.style.visibility = 'hidden'; el.style.pointerEvents = 'none'; };
     if (skip) { el.style.transition = 'none'; hide(); return; }
     document.body.style.overflow = 'hidden';
-    setTimeout(() => { hide(); document.body.style.overflow = ''; sessionStorage.setItem('ye-loader-seen', '1'); }, 2050);
+    setTimeout(() => { hide(); document.body.style.overflow = ''; sessionStorage.setItem('ye-loader-seen', '1'); }, 1900);
   }
 
   initReveal() {

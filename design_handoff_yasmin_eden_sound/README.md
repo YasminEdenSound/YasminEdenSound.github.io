@@ -43,18 +43,9 @@ Do not implement 1b or 1c.
 ## The jasmine mark
 The brand mark is a five-petal jasmine (the name Yasmin → jasmine). It is **geometric, not
 illustrative**: five identical ellipses in a 100×100 viewBox (`viewBox="-50 -50 100 100"`),
-each `rx="13" ry="22" cy="-26"`, rotated 0/72/144/216/288°, filled `#F2EDE1`, over a
-centred `<circle r="10">` filled `#E9C846`. Nothing else. Cream petals around a yellow
-centre — the two brand colours doing the two jobs real jasmine does.
-It appears at 22px in the nav, `min(200px, 46vw)` in the loading intro, 17px in the footer,
-one petal in the dividers, and at `min(760px, 90vw)` at 8.5% opacity as a background bloom
-in the hero.
-
-Two deliberate exceptions, both cases where the shape is a motif rather than a logo lockup:
-the **divider petal** is a lone petal and stays accent yellow so the accent rhythm down the
-page survives, and the **hero bloom** keeps its yellow fill because at 8.5% opacity it is
-atmosphere, not a readable mark — cream there would turn the hero's warm glow grey. Both use
-the new `ry="22"` silhouette.
+each `rx="13" ry="38" cy="-26"`, rotated 0/72/144/216/288°, filled `#E9C846`. Nothing else.
+It appears at 22px in the nav, 96px in the loading intro, 17px in the footer, one petal in the
+dividers, and at `min(760px, 90vw)` at 8.5% opacity as a background bloom in the hero.
 
 ## Screens / Views
 Single scrolling page. Sections in order:
@@ -74,12 +65,8 @@ Single scrolling page. Sections in order:
 ### Loading intro (first visit only)
 - Purpose: brand moment. Fixed overlay, `inset: 0`, `z-index: 100`, background `#12110E`,
   centered column, `gap: 26px`.
-- Content: the `min(200px,46vw)` mark, then "Yasmin Eden" (Instrument Serif 38px) with "SOUND"
-  beneath (Geist Mono 10px, letter-spacing .34em, uppercase, `#9A9384`).
-- The mark is not simply drawn — it is **arrived at**. Five channel bars of differing lengths
-  slide in as a level readout with a quarter note resting on the centre line; a playhead sweeps
-  across at constant speed, sounds the note, and releases each channel into a petal as it
-  clears that channel's right end. See Interactions for the full choreography.
+- Content: the 96px jasmine, then "Yasmin Eden" (Instrument Serif 38px) with "SOUND" beneath
+  (Geist Mono 10px, letter-spacing .34em, uppercase, `#9A9384`).
 - See Interactions for timing. Shows once per browser session.
 
 ### Hero (#top)
@@ -197,42 +184,14 @@ sets `animation-duration/transition-duration: .01ms` globally and branches on
 `matchMedia('(prefers-reduced-motion: reduce)').matches` in JS to skip the intro, the reveals
 and the meter loop. Preserve both.
 
-1. **Loading intro.** Three beats — attack, transport, release. Total ~1.9s.
-   - *Attack* (0–.58s): five bars slide in from the left via `ldBarIn`, 380ms
-     `cubic-bezier(.05,.8,.2,1)`, staggered 50ms. They are **left-anchored at a common zero
-     with different lengths** — a level readout, not a music staff. A yellow quarter note
-     (notehead `rx 5.6 / ry 4.3` rotated `-20°`, stem tangent to its rightmost point at
-     `(5.463,-0.758)`) sits on the centre line from the first frame, which lets the same five
-     bars also read as a staff.
-   - *Transport* (.46–1.08s): the playhead sweeps left→right via `ldSweep`. It is the one
-     element timed **`linear`** — transport does not ease. At .77s it crosses the note and
-     plays it: the stem retracts *into* the head (`scaleY(0)` about the shared `0 0` origin,
-     so it collapses downward rather than shrinking in place).
-   - *Release* (.70–1.57s): each bar blooms into its petal the moment the playhead clears
-     **its own right end**, so the order (0,2,4,3,1) is derived from `-42 + length`, not typed
-     in as a stagger. Change a bar's length and the choreography re-derives itself. At 1.14s
-     the notehead opens into the finished yellow centre and a ring pulses out.
-   - The wordmark rises at 1.05s; "SOUND" fades in with `letter-spacing` spreading
-     `.03em → .34em`.
-   - At 2050ms the overlay transitions to `opacity: 0; visibility: hidden` over 700ms and
-     `pointer-events` go to none. `document.body.style.overflow = 'hidden'` while it plays;
-     restored on hide. Gated by `sessionStorage['ye-loader-seen']` — once per session.
-
-   **Three implementation traps, all of which will silently break this if ignored:**
-   - `transform-origin` **must be `0 0`, never `50% 50%`**. With `transform-box: view-box`,
-     browsers resolve percentages against the viewBox *size* but ignore its `-50 -50`
-     min-x/min-y, so 50% pivots on the corner and every rotated petal swings off-canvas.
-   - Each petal is a **`<rect>`, not an `<ellipse>`**. A rect with `rx=w/2, ry=h/2` renders as
-     a true ellipse, and at `rx=ry=half-thickness` it is a bar with round caps. An ellipse
-     squashed flat is always a lens — it cannot have round ends. The corner radii must track
-     `min(w,h)/2` at *every* keyframe or the shape goes visibly boxy midway, which is why the
-     `ldBloom0…4` keyframes are generated rather than hand-written, and why they run `linear`
-     with the easing baked into the stop positions — easing per-interval would desync
-     `x`/`y`/`transform` from `width`/`height`.
-   - Two animations on one element both using `fill: both` will fight: the later one
-     back-fills its `from` state through its entire delay and overwrites the earlier one.
-     The bar entrance therefore lives on a wrapping `<g>`, and `ldFlash` and `ldRingOut` use
-     `forwards` only.
+1. **Loading intro.** Petals animate in one at a time via a `petalIn` keyframe:
+   `transform: rotate(var(--r)) scaleY(.06)` + `opacity: 0` → `scaleY(1)`/`opacity: 1`,
+   720ms `cubic-bezier(.2,.8,.2,1)`, delays 50 / 170 / 290 / 410 / 530ms. Each petal carries its
+   own rotation as `--r` so the rotate survives the scale. The name block then uses a `riseIn`
+   keyframe (14px up + fade), 800ms, delay 620ms. At 1900ms the overlay transitions to
+   `opacity: 0; visibility: hidden` over 700ms and `pointer-events` go to none.
+   `document.body.style.overflow = 'hidden'` while it plays; restored on hide.
+   Gated by `sessionStorage['ye-loader-seen']` — once per session.
 2. **Section reveals.** Elements marked `data-reveal` start at `opacity: 0`,
    `translateY(14px)`, transition `opacity .6s ease, transform .7s cubic-bezier(.2,.8,.2,1)`.
    An IntersectionObserver (`rootMargin: '0px 0px -8% 0px'`, `threshold: .08`) reveals them and
@@ -283,10 +242,7 @@ Colors
 - `#F2EDE1` — primary text (cream)
 - `#CFC9BC` — body copy on dark
 - `#9A9384` — muted / mono labels (6.19:1 on ink — this is the floor; do not go dimmer)
-- `#E9C846` — accent (signal yellow): CTAs, numbers, prices, the mark's centre, meters,
-  the loading intro's playhead and note
-- `#F2EDE1` also carries the mark's petals and the loading intro's channel bars — the bars
-  flash from accent to cream as they release, so the "signal" visibly becomes the brand
+- `#E9C846` — accent (signal yellow): CTAs, numbers, prices, the mark, meters
 - `rgba(242,237,225,.02–.05)` — card and input fills
 - `rgba(242,237,225,.09–.14)` — hairlines and borders
 - `rgba(233,200,70,.04 / .34 / .45)` — emphasized card fill / border / active card border

@@ -4,19 +4,204 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Yasmin Eden Sound — mixing, mastering, recording</title>
-<!-- PRE-LAUNCH: keeps previews out of Google. DELETE THIS LINE when the
-     real content is in and the site is meant to be found. -->
-<meta name="robots" content="noindex, nofollow">
+<!-- PRE-LAUNCH: keeps previews out of Google. The launch switch in
+     /editor.html rewrites the line below, so leave the marker comment on it. -->
+<meta name="robots" content="noindex, nofollow"><!-- ye-robots -->
 <meta name="description" content="I'm Yasmin Eden — an independent engineer mixing, mastering and recording for bands and solo artists. Send me your demos.">
+<script>
+/* The page's words, photos and numbers live in content.js, which /editor.html
+   rewrites. Loaded with document.write rather than a plain <script src> for
+   one reason: GitHub Pages serves assets with a ten-minute cache, so straight
+   after publishing an edit the browser would keep handing back the OLD
+   content.js. The ?v stamp changes once a minute, which caps that at 60s
+   while still letting a repeat visit inside the same minute hit cache.
+
+   This must stay synchronous and ahead of everything else — the hydrator at
+   the foot of the page needs window.YE_CONTENT to already be there. */
+document.write('<script src="content.js?v=' + Math.floor(Date.now()/60000) + '"><\/script>');
+
+/* Preview mode: the editor loads this page in an iframe with ?preview=1 to
+   show an unsaved draft. Two things have to be decided before any other
+   script runs, which is why they are up here and not in the hydrator:
+   the intro animation must be skipped (it would replay on every reload as
+   she types) and smooth scrolling must be off (restoring the scroll position
+   after a reload would otherwise animate across the whole page). */
+if (/[?&]preview=1/.test(location.search)){
+  try { sessionStorage.setItem('ye-loader-seen','1'); } catch(e){}
+  document.documentElement.style.scrollBehavior = 'auto';
+  document.documentElement.classList.add('ye-preview');
+}
+
+/* Theme restore. This MUST stay here, inline and synchronous, ahead of the
+   stylesheet: anything later — a module, a DOMContentLoaded handler, even a
+   plain deferred script — runs after the first paint, and the visitor gets
+   a flash of the wrong theme before it corrects. One attribute on <html> is
+   the entire mechanism; every colour is a token keyed off it.
+
+   Precedence: an explicit choice wins, otherwise follow the device. So a
+   visitor whose phone is in dark mode lands on dark, but the moment they
+   touch the toggle that decision sticks and the OS stops being consulted —
+   which is the behaviour people expect and the reason the stored value is
+   only ever written by a click, never by this. */
+var YE_STORED = null;
+try { YE_STORED = localStorage.getItem('ye-theme'); } catch(e){}  /* private mode */
+if (YE_STORED ? YE_STORED === 'dark'
+              : matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.setAttribute('data-theme','dark');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* ===========================================================================
+   THEME TOKENS
+
+   Two themes. :root is light; :root[data-theme="dark"] below overrides the
+   same names. The attribute is written on <html> by the inline script in
+   <head>, before first paint, so there is no flash of the wrong theme.
+
+   Every token below is a ROLE, never a colour name. That is load-bearing:
+   the dark theme runs gold / ember / rose where the light one runs amber /
+   terracotta / slate, so a token called --slate holding rose would be a
+   lie the next person has to debug. Hence --acc, --acc-2, --acc-3.
+
+   The two rules that make the whole thing work without per-theme rules
+   scattered through the sheet:
+
+     - Hairlines are derived from --text-rgb, never from a grey. Light
+       theme: charcoal at 12%. Dark theme: cream at 12%. Same declaration,
+       correct in both, because the token flips with the theme.
+     - Shadows get their own tokens rather than being built from
+       --text-rgb, because they do NOT invert — a shadow is black-ish in
+       both themes, just much stronger on the dark one.
+   =========================================================================== */
 :root{
-  --ink:#12110E; --cream:#F2EDE1; --body:#CFC9BC; --dim:#9A9384; --acc:#E9C846;
+  /* ---- grounds ----
+     Warm ivory, not blue white and not blush: there is a little yellow in
+     these and almost no red, so the page reads bright and neutral rather
+     than tinted. --surface is the raised one. On a light theme a hairline
+     border alone leaves a card looking printed onto the page, so cards get
+     a soft neutral shadow as well. */
+  --bg:#FBFAF7; --bg-2:#F4F1EA; --surface:#FFFFFF;
+  --bg-rgb:251 250 247;
+
+  /* ---- text ----
+     Warm charcoal rather than pure black — enough brown in it to sit with
+     the ivory, far enough down to hold 14.5:1.
+     --text-dim is the small-caps label colour and the one most at risk from
+     the wash; #655D55 keeps it at 4.8:1 even under the deepest glow. */
+  --text:#2A2622; --text-2:#4F4942; --text-dim:#655D55;
+  --text-rgb:42 38 34;
+
+  /* ---- accents ----
+     Amber leads. The supporting hues are terracotta and slate — editorial
+     neutrals, chosen so the page carries colour without the palette
+     reading as coded one way or the other.
+
+     Each comes in two strengths and they are NOT interchangeable: the
+     bright one is for fills, borders, washes and large type, where only
+     3:1 is required; the `-deep` one is for anything small or for carrying
+     --on-acc text, where 4.5:1 is. Amber is the extreme case — #D9A227 is
+     2.2:1 on --bg, so it cannot carry text at ANY size, and misses even
+     the 3:1 a border owes; it is fills-only here.
+     The brightness comes from the ground, the wash and the large elements;
+     the small type is deep on purpose.
+
+     Sage is a fourth hue and lives only inside the journey ramp in RAMP,
+     so it is not a token here. */
+  --acc:#D9A227;    --acc-deep:#8A5C0C;
+  --acc-2:#C4714B;  --acc-2-deep:#964C2E;   /* terracotta */
+  --acc-3:#5C87AC;  --acc-3-deep:#325C7C;   /* slate blue */
+  --on-acc:#FFFFFF; /* text on an accent fill */
+
+  /* The jasmine, and the only pink on the page. Light, so the mark keeps
+     the flower's own colour rather than becoming a brand colour — the site
+     around it stays neutral. --bloom-mark is the 17–22px nav and footer
+     marks only, which need the opposite correction in each theme: deeper
+     than --bloom on ivory, lighter than it on espresso. At that size the
+     un-corrected tone thins out to nothing either way. */
+  --bloom:#EFA9BC;  --bloom-mark:#DD7E99;
+
+  /* The plate behind the conservatoire logo. Its artwork is near-black on
+     a transparent ground, so this has to stay light in BOTH themes — it is
+     the one surface that must not invert. */
+  --logo-plate:#FFFFFF;
+
+  /* Shadows do not invert, they intensify: same black, much more of it on
+     the dark theme, where there is no white card edge to do the work. */
+  --shadow-sm:0 4px 16px rgb(42 38 34 / .09);
+  --shadow-md:0 6px 18px rgb(42 38 34 / .14);
+  --shadow-lg:0 10px 30px rgb(42 38 34 / .18);
+
+  /* Channel triplets, so the same colour can be reused at any alpha via
+     rgb(var(--x) / a) instead of being retyped as an rgba() literal. */
+  --acc-rgb:217 162 39;
+  --acc-2-rgb:196 113 75;
+  --acc-3-rgb:92 135 172;
+
+  /* How hard the ground glows. The light theme needs more of it — pastels
+     on ivory are nearly invisible below this — while the dark theme's
+     deeper wash tones reach the same strength at about .62. */
+  --wash-op:1;
+
+  /* The journey's live colour. The renderer rewrites these as you scroll —
+     see the `wash`/`ink` ramp in RAMP. --wash-a is the chapter you are in,
+     --wash-b the one you are heading for, --hue-ink the readable form of
+     the first. Seeded with chapter 0 of the LIGHT ramp so the page is
+     correct on the very first paint, before a frame has run; the dark
+     block below reseeds them with its own chapter 0 for the same reason. */
+  --wash-a:230 190 120; --wash-b:178 198 158; --hue-ink:138 92 12;
+
   --release:cubic-bezier(.22,1,.28,1);
   --gut:28px;
   --band:1120px;
+}
+
+/* ---------------------------------------------------------------------------
+   DARK — warm espresso and gold.
+
+   Only the tokens that change are restated; --release, --gut and --band are
+   inherited from :root above. Note what ISN'T here: no component rules. If a
+   theme switch needs a rule rather than a token, the token set is wrong.
+
+   The `-deep` suffix keeps its meaning — "the readable one" — but inverts
+   direction. On ivory, readable meant darker than the fill. On espresso it
+   means lighter, so --acc-deep IS the bright gold, and --on-acc becomes the
+   ground colour rather than white.
+   --------------------------------------------------------------------------- */
+:root[data-theme="dark"]{
+  /* #12110E was the original ground and read as unlit rather than intimate.
+     Everything here is warm-shifted, so the dark has a temperature. */
+  --bg:#1E1611; --bg-2:#241A14; --surface:#271D16;
+  --bg-rgb:30 22 17;
+
+  /* --text-dim holds 5.1:1 against the deepest corner of the dark wash */
+  --text:#F7F1E4; --text-2:#DAD0BE; --text-dim:#B3A58F;
+  --text-rgb:247 241 228;
+
+  /* gold leads again, as it did originally; ember and rose support it */
+  --acc:#E9C846;    --acc-deep:#E9C846;   /* gold is already 10.7:1 here */
+  --acc-2:#E8734A;  --acc-2-deep:#F0855E; /* ember */
+  --acc-3:#C4566B;  --acc-3-deep:#E88AA0; /* rose */
+  --on-acc:#1E1611; /* dark text on a gold fill, not white — 10.7:1 */
+
+  /* the small marks need to go UP against espresso, not down */
+  --bloom:#EFA9BC;  --bloom-mark:#F2B8C6;
+
+  /* unchanged on purpose — the logo artwork is near-black either way */
+  --logo-plate:#F7F1E4;
+
+  --shadow-sm:0 4px 16px rgb(0 0 0 / .34);
+  --shadow-md:0 6px 18px rgb(0 0 0 / .44);
+  --shadow-lg:0 10px 30px rgb(0 0 0 / .50);
+
+  --acc-rgb:233 200 70;
+  --acc-2-rgb:232 115 74;
+  --acc-3-rgb:196 86 107;
+
+  --wash-op:.62;
+
+  --wash-a:233 200 70; --wash-b:214 152 62; --hue-ink:233 200 70;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{
@@ -24,61 +209,128 @@ html{
   -webkit-text-size-adjust:100%;
 }
 body{
-  background:var(--ink);color:var(--cream);
+  background:var(--bg);color:var(--text);
   font-family:'Instrument Sans',system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;overflow-x:hidden;
 }
-a{color:var(--acc);text-decoration:none}
+a{color:var(--acc-deep);text-decoration:none}
 img{max-width:100%;height:auto;display:block}
+/* Inside the editor's preview frame the page's own scrollbar sits right next
+   to the editor's and reads as clutter. Hide it there only — the real site
+   keeps its scrollbar, which is the one thing telling a visitor how far in
+   they are. Scrolling itself is untouched. */
+html.ye-preview{scrollbar-width:none;-ms-overflow-style:none}
+html.ye-preview::-webkit-scrollbar,html.ye-preview body::-webkit-scrollbar{width:0;height:0;display:none}
 input,textarea,button{font:inherit;color:inherit}
+
+/* ============ the colour the page sits on ============
+   Three radial glows behind everything, rewritten per chapter by the
+   renderer, so the ground travels rose → peach → coral → lilac → hot pink
+   and lands back on rose at "Now" — the journey is told in colour as well
+   as in strings. One fixed, empty, pointer-transparent element: nothing
+   here can intercept a click, and a hue change repaints this layer alone.
+
+   All three sit in the RIGHT half, which is not an aesthetic choice. The
+   copy column is pinned left, and on a light ground the wash DARKENS the
+   page — the opposite of what it did on the dark theme. Blush under the
+   copy was pulling 10px labels from 5.1:1 down to 3.7:1. Keeping the glow
+   off the text means the chapter tones can stay vivid instead of being
+   deepened until they are mud. */
+#wash{
+  position:fixed;inset:0;z-index:0;pointer-events:none;opacity:var(--wash-op);
+  background:
+    radial-gradient(86% 72% at 90% 2%,   rgb(var(--wash-a) / .38), rgb(var(--wash-a) / 0) 64%),
+    radial-gradient(76% 64% at 80% 98%,  rgb(var(--wash-b) / .32), rgb(var(--wash-b) / 0) 66%),
+    radial-gradient(58% 52% at 72% 50%,  rgb(var(--wash-a) / .12), rgb(var(--wash-a) / 0) 72%);
+}
 
 /* ============ the instrument (fixed, follows you) ============ */
 #rig{position:fixed;inset:0;z-index:1;pointer-events:none;transition:opacity .5s ease}
 #rig svg{width:100%;height:100%;display:block}
-.string{fill:none;stroke:var(--cream);stroke-width:1.25;stroke-linecap:round}
-.note{fill:var(--acc)}
-.mark-petal{fill:var(--cream)}
+/* The strings are drawn in the chapter's own colour and the renderer fades
+   each one between .40 and .90 opacity, so on white they land as rose lines
+   of varying weight rather than the single cream hairline they were. */
+.string{fill:none;stroke:rgb(var(--hue-ink));stroke-width:1.25;stroke-linecap:round}
+/* the falling notes take the current chapter's colour, so the thing that
+   actually sounds the string is also what carries the hue down the page */
+.note{fill:rgb(var(--hue-ink))}
+/* the mark is the wordmark, not part of the journey — a light jasmine with
+   a gold centre, fixed, so it reads the same wherever the wash has got to.
+   This bloom is ~30% of the viewport, so the light tone carries. */
+.mark-petal{fill:var(--bloom)}
 .mark-core{fill:var(--acc)}
 
+/* the transport reads the chapter it is sitting on, so the playhead changes
+   colour with the music under it */
 #head{position:fixed;z-index:2;pointer-events:none;display:flex;align-items:center}
 #head .rule{flex:1;height:1px;background:linear-gradient(90deg,
-      rgba(233,200,70,0) 0%, rgba(233,200,70,.5) 12%, rgba(233,200,70,.5) 88%, rgba(233,200,70,0) 100%)}
+      rgb(var(--hue-ink) / 0) 0%, rgb(var(--hue-ink) / .45) 12%, rgb(var(--hue-ink) / .45) 88%, rgb(var(--hue-ink) / 0) 100%)}
 #head .tc{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.18em;
-      color:var(--acc);padding:0 14px;white-space:nowrap}
+      color:rgb(var(--hue-ink));padding:0 14px;white-space:nowrap}
 
 #ruler{position:fixed;top:0;right:0;bottom:0;width:54px;z-index:3;pointer-events:none;
        display:flex;flex-direction:column;justify-content:center;transition:opacity .4s}
 #ruler .tick{position:relative;flex:1;display:flex;align-items:center;justify-content:flex-end;
        padding-right:14px;font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
-       color:var(--dim);opacity:.45;transition:opacity .3s,color .3s}
+       color:var(--text-dim);opacity:.45;transition:opacity .3s,color .3s}
 #ruler .tick::after{content:'';position:absolute;right:0;top:50%;width:7px;height:1px;background:currentColor}
-#ruler .tick.on{opacity:1;color:var(--acc)}
+#ruler .tick.on{opacity:1;color:rgb(var(--hue-ink))}
 
 /* ============ chrome ============ */
 /* Sticky nav — the Book CTA is never more than one tap away, at any
    scroll position, on any screen. */
 #topbar{
   position:fixed;top:0;left:0;right:0;z-index:30;
-  background:rgba(18,17,14,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border-bottom:1px solid rgba(242,237,225,.09);
+  background:rgb(var(--bg-rgb) / .82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid rgb(var(--text-rgb) / .12);
 }
 #topbar .inner{
   max-width:var(--band);margin:0 auto;padding:13px var(--gut);
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;
 }
-#topbar .wordmark{display:flex;align-items:center;gap:10px;color:var(--cream)}
+#topbar .wordmark{display:flex;align-items:center;gap:10px;color:var(--text)}
+/* The nav and footer marks are 22px and 17px — at that size --bloom thins
+   out to almost nothing against ivory, so these two take the deeper tone.
+   CSS beats the fill="" presentation attribute in the markup, which stays
+   put as the no-CSS fallback. */
+#topbar .wordmark svg g,footer .left svg g{fill:var(--bloom-mark)}
+#topbar .wordmark svg circle,footer .left svg circle{fill:var(--acc)}
 #topbar .wordmark span{font-family:'Instrument Serif',Georgia,serif;font-size:19px}
 #topbar .right{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
 #topbar .links{display:flex;gap:22px;
   font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase}
-#topbar .links a{color:var(--dim);transition:color .15s}
-#topbar .links a:hover{color:var(--cream)}
+#topbar .links a{color:var(--text-dim);transition:color .15s}
+#topbar .links a:hover{color:var(--acc-deep)}
 #topbar .book{
-  padding:9px 18px;border:1px solid var(--acc);border-radius:999px;
-  font-size:13px;font-weight:500;white-space:nowrap;color:var(--acc);
+  padding:9px 18px;border:1px solid var(--acc-deep);border-radius:999px;
+  font-size:13px;font-weight:500;white-space:nowrap;color:var(--acc-deep);
   transition:background .15s,color .15s;
 }
-#topbar .book:hover{background:var(--acc);color:var(--ink)}
+/* --acc-deep, not --acc: --on-acc on the bright amber is 1.9:1, and 13px */
+#topbar .book:hover{background:var(--acc-deep);border-color:var(--acc-deep);color:var(--on-acc)}
+
+/* --- theme toggle ---
+   44px so it is a legal tap target on a phone, where the section links are
+   dropped and this is one of only three things left in the bar. The icon
+   shows the theme you would GET, not the one you are in — a moon on the
+   light theme — which is the convention people actually read correctly. */
+#theme{
+  width:44px;height:44px;flex:none;display:grid;place-items:center;
+  /* No border. A bordered circle sitting next to the bordered Book pill
+     read as two competing buttons, and at this icon size it was mostly
+     empty ring. The 44px stays as the tap target; only the icon shows. */
+  border:0;border-radius:999px;background:none;color:var(--text-dim);
+  cursor:pointer;transition:color .15s,background .15s;
+}
+#theme:hover{color:var(--acc-deep);background:rgb(var(--acc-rgb) / .16)}
+#theme:focus-visible{outline:2px solid var(--acc-deep);outline-offset:2px}
+#theme svg{width:20px;height:20px;fill:none;stroke:currentColor;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+/* one icon at a time: moon while light, sun while dark */
+#theme .i-sun{display:none}
+:root[data-theme="dark"] #theme .i-moon{display:none}
+:root[data-theme="dark"] #theme .i-sun{display:block}
+
 /* anchors must clear the fixed bar */
 html{scroll-padding-top:74px}
 
@@ -86,8 +338,8 @@ html{scroll-padding-top:74px}
   position:fixed;right:68px;bottom:20px;z-index:31;
   display:inline-flex;align-items:center;
   font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--acc);background:rgba(18,17,14,.72);backdrop-filter:blur(8px);
-  border:1px solid rgba(233,200,70,.45);border-radius:999px;padding:11px 16px;cursor:pointer;
+  color:var(--acc-deep);background:rgb(var(--bg-rgb) / .78);backdrop-filter:blur(8px);
+  border:1px solid var(--acc-deep);border-radius:999px;padding:11px 16px;cursor:pointer;
   transition:background .15s,color .15s,opacity .35s ease;
 }
 /* the toggle only drives the journey's strings — past them no notes spawn,
@@ -96,10 +348,10 @@ html{scroll-padding-top:74px}
 /* armed but waiting for the gesture the browser insists on */
 #snd.armed{border-color:var(--acc);animation:sndPulse 2.8s ease-in-out infinite}
 @keyframes sndPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(233,200,70,0)}
-  50%    {box-shadow:0 0 0 5px rgba(233,200,70,.13)}
+  0%,100%{box-shadow:0 0 0 0 rgb(var(--acc-rgb) / 0)}
+  50%    {box-shadow:0 0 0 5px rgb(var(--acc-rgb) / .13)}
 }
-#snd:hover,#snd[aria-pressed="true"]{background:var(--acc);color:var(--ink)}
+#snd:hover,#snd[aria-pressed="true"]{background:var(--acc-deep);border-color:var(--acc-deep);color:var(--on-acc)}
 #snd:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
 
 /* ============ journey ============ */
@@ -109,15 +361,15 @@ main{position:relative;z-index:4}
   gap:20px;padding:0 var(--gut);max-width:var(--band);margin:0 auto;
 }
 .eyebrow{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.28em;
-  text-transform:uppercase;color:var(--acc)}
+  text-transform:uppercase;color:var(--acc-deep)}
 #intro h1{
   font-family:'Instrument Serif',Georgia,serif;font-weight:400;
   font-size:clamp(42px,7.4vw,94px);line-height:.99;letter-spacing:-.015em;max-width:15ch;
   text-wrap:balance;
 }
-#intro .sub{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--body);max-width:44ch}
+#intro .sub{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--text-2);max-width:44ch}
 .scrollcue{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.22em;
-  text-transform:uppercase;color:var(--dim);margin-top:12px;animation:bob 2.4s ease-in-out infinite}
+  text-transform:uppercase;color:var(--text-dim);margin-top:12px;animation:bob 2.4s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(5px);opacity:1}}
 
 .chapter{
@@ -125,16 +377,24 @@ main{position:relative;z-index:4}
   padding:8vh var(--gut);max-width:var(--band);margin:0 auto;
 }
 .copy{max-width:44ch}
+/* the chapter label is literally printed in that chapter's colour —
+   --hue-ink, not --wash-a, because at 10px the pastel wash tones are
+   nowhere near 4.5:1 on white */
 .kicker{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.26em;
-  text-transform:uppercase;color:var(--acc);margin-bottom:18px;display:block}
+  text-transform:uppercase;color:rgb(var(--hue-ink));margin-bottom:18px;display:block;
+  transition:color .25s linear}
+/* The headline takes the chapter's colour too, and this is where most of the
+   brightness actually lands: at 32–60px it is the largest coloured thing on
+   the page by far, and large type only needs 3:1, so it can stay vivid. */
 .chapter h2{
   font-family:'Instrument Serif',Georgia,serif;font-weight:400;
   font-size:clamp(32px,5.2vw,60px);line-height:1.03;letter-spacing:-.012em;
   text-wrap:balance;margin-bottom:20px;
+  color:rgb(var(--hue-ink));transition:color .25s linear;
 }
-.chapter p{font-size:clamp(16px,1.5vw,18px);line-height:1.68;color:var(--body);text-wrap:pretty}
+.chapter p{font-size:clamp(16px,1.5vw,18px);line-height:1.68;color:var(--text-2);text-wrap:pretty}
 .chapter p + p{margin-top:14px}
-.ph{color:var(--dim)}
+.ph{color:var(--text-dim)}
 
 /* reveals — fast attack, long release */
 [data-reveal]{opacity:0;transform:translateY(18px);
@@ -151,9 +411,9 @@ main{position:relative;z-index:4}
 .fan-card{
   position:absolute;inset:0;padding:0;cursor:pointer;
   border-radius:3px;overflow:hidden;
-  border:1px dashed rgba(242,237,225,.22);
+  border:1px dashed rgb(var(--text-rgb) / .24);
   /* opaque, or the card behind shows through and both labels overlap */
-  background-color:#191712;
+  background-color:var(--surface);
   background-size:cover;background-position:center;
   transform-origin:50% 100%;
   transition:transform .45s var(--release), opacity .35s ease;
@@ -161,7 +421,11 @@ main{position:relative;z-index:4}
             translateY(calc(var(--i,0) * -7px))
             scale(calc(1 - var(--i,0) * 0.045));
 }
-.fan-card.has-img{border:1px solid rgba(242,237,225,.14)}
+/* a filled card is edged in its chapter's colour rather than in grey wash.
+   On white it also needs a shadow — a hairline alone leaves a photo looking
+   printed onto the page instead of sitting on it. */
+.fan-card.has-img{border:1px solid rgb(var(--hue-ink) / .30);
+  box-shadow:var(--shadow-md)}
 /* only the top card is fully lit, so the stack reads as depth not clutter */
 /* gentle enough that a four-card fan still shows its back card */
 .fan-card{opacity:calc(1 - var(--i,0) * 0.22)}
@@ -170,23 +434,25 @@ main{position:relative;z-index:4}
    leaking clipped placeholder text */
 .fan-card:not(.top) .slot{visibility:hidden}
 .fan-card:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
-.fan-count{color:var(--cream)}
-.fan-hint{margin-left:10px;color:var(--acc);opacity:.75}
+.fan-count{color:var(--text)}
+.fan-hint{margin-left:10px;color:rgb(var(--hue-ink));opacity:.85}
 .fan-hint::before{content:'· '}
 
 .frame{
   position:relative;display:block;aspect-ratio:3/2;border-radius:3px;overflow:hidden;
-  border:1px dashed rgba(242,237,225,.22);background:rgba(242,237,225,.03);
+  border:1px dashed rgb(var(--text-rgb) / .24);background:var(--surface);
   background-size:cover;background-position:center;
 }
-.frame.has-img{border:1px solid rgba(242,237,225,.14)}
+.frame.has-img{border:1px solid rgb(var(--hue-ink) / .30);
+  box-shadow:var(--shadow-md)}
 /* A logo is not a photograph: its artwork is dark (#353333 / #000) on a
-   transparent ground, so on ink it is invisible and `cover` amputates it.
-   Give it a cream plate, fit it whole, and pad it.
+   transparent ground, so `cover` amputates it. Fit it whole and pad it.
+   --logo-plate, not --surface: this is the one surface that must NOT
+   invert with the theme, or the logo goes black-on-espresso and vanishes.
    background-origin must be content-box — the padding-box default ignores
    the padding and the logo runs to the frame edge. */
 .logo{
-  background-color:var(--cream);
+  background-color:var(--logo-plate);
   background-size:contain;
   background-repeat:no-repeat;
   background-origin:content-box;
@@ -200,29 +466,38 @@ main{position:relative;z-index:4}
   align-items:center;justify-content:center;
   text-align:center;padding:16px;
   font:500 9px/1.7 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--dim);
+  text-transform:uppercase;color:var(--text-dim);
 }
-.slot b{display:block;color:rgba(242,237,225,.5);font-weight:500;margin-bottom:6px}
+.slot b{display:block;color:rgb(var(--text-rgb) / .62);font-weight:500;margin-bottom:6px}
 .has-img .slot{display:none}
 .media figcaption{margin-top:11px;
   font:500 9px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--dim)}
+  text-transform:uppercase;color:var(--text-dim)}
 .media .lnk{display:inline-flex;align-items:center;min-height:44px;
   font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--acc);transition:color .15s}
-.media .lnk:hover{color:var(--cream)}
+  text-transform:uppercase;color:rgb(var(--hue-ink));transition:color .15s}
+.media .lnk:hover{color:var(--text)}
 
 /* ============ act II ============ */
 section.act2{position:relative;z-index:4;max-width:var(--band);margin:0 auto;
   padding:clamp(64px,9vw,104px) var(--gut)}
-.band{position:relative;z-index:4;background:rgba(242,237,225,.03);
-  border-top:1px solid rgba(242,237,225,.09);border-bottom:1px solid rgba(242,237,225,.09)}
+/* Past the journey the wash has settled on amber and stopped moving, so the
+   banded sections carry the colour themselves — a sand-to-slate tint, warm
+   into cool, that reads as a different room from the sections either side. */
+.band{position:relative;z-index:4;
+  background:linear-gradient(170deg, rgb(var(--acc-rgb) / .16), rgb(var(--acc-3-rgb) / .10)),var(--bg-2);
+  border-top:1px solid rgb(var(--acc-rgb) / .30);border-bottom:1px solid rgb(var(--acc-rgb) / .30)}
 .band > section.act2{padding-top:clamp(56px,8vw,96px);padding-bottom:clamp(56px,8vw,96px)}
 .head2{display:flex;align-items:baseline;gap:18px;margin-bottom:14px;flex-wrap:wrap}
-.num{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.24em;color:var(--acc)}
+.num{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.24em;color:var(--acc-deep)}
+/* each act II section gets its own number colour, so the four of them read as
+   a set rather than as four copies of the same amber. All three are the -deep
+   tones: these are 10px. */
+#about .num{color:var(--acc-2-deep)}
+#rates .num{color:var(--acc-3-deep)}
 .head2 h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;
   font-size:clamp(28px,4vw,46px);line-height:1.05}
-.lede{max-width:46ch;color:var(--dim);font-size:16px;line-height:1.6;margin-bottom:38px;text-wrap:pretty}
+.lede{max-width:46ch;color:var(--text-dim);font-size:16px;line-height:1.6;margin-bottom:38px;text-wrap:pretty}
 
 .grid{display:grid;gap:22px}
 .g-work{grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))}
@@ -232,86 +507,125 @@ section.act2{position:relative;z-index:4;max-width:var(--band);margin:0 auto;
 
 /* --- track cards: real player, real analysis --- */
 .track{display:flex;flex-direction:column;gap:14px;padding:20px;
-  border:1px solid rgba(242,237,225,.11);border-radius:4px;background:rgba(242,237,225,.02);
-  transition:border-color .2s,background .2s}
-.track.playing{border-color:rgba(233,200,70,.45);background:rgba(233,200,70,.045)}
+  border:1px solid rgb(var(--text-rgb) / .14);border-radius:4px;background:var(--surface);
+  box-shadow:var(--shadow-sm);
+  transition:border-color .2s,background .2s,box-shadow .2s}
+/* the one place an amber shadow earns its keep — a card that is playing
+   should look lit, and a neutral shadow cannot say that */
+.track.playing{border-color:var(--acc);box-shadow:0 8px 24px rgb(var(--acc-rgb) / .38);
+  background:linear-gradient(160deg, rgb(var(--acc-rgb) / .14), rgb(var(--acc-2-rgb) / .10))}
 .track .row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
 .track .ttl{font-family:'Instrument Serif',Georgia,serif;font-size:22px;line-height:1.15}
 .track .cred{font:500 10px/1.4 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--dim);margin-top:6px}
+  text-transform:uppercase;color:var(--text-dim);margin-top:6px}
 .track .state{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--dim);white-space:nowrap;padding-top:4px}
-.track.playing .state{color:var(--acc)}
+  text-transform:uppercase;color:var(--text-dim);white-space:nowrap;padding-top:4px}
+.track.playing .state{color:var(--acc-deep)}
 .track canvas{width:100%;height:42px;display:block}
 .track .ctl{display:flex;align-items:center;gap:12px}
-.play{width:44px;height:44px;flex:none;border-radius:999px;border:1px solid var(--acc);
-  background:none;color:var(--acc);cursor:pointer;display:grid;place-items:center;
+/* -deep on the ring too: a control's boundary owes 3:1 the same as text
+   does, and the bright amber ring was dissolving into the white card */
+.play{width:44px;height:44px;flex:none;border-radius:999px;border:1px solid var(--acc-deep);
+  background:none;color:var(--acc-deep);cursor:pointer;display:grid;place-items:center;
   transition:background .15s,color .15s}
-.play:hover:not(:disabled){background:var(--acc);color:var(--ink)}
+.play:hover:not(:disabled){background:var(--acc-deep);border-color:var(--acc-deep);color:var(--on-acc)}
 .play:disabled{opacity:.35;cursor:not-allowed}
 .play svg{width:13px;height:13px;fill:currentColor}
-.track .time{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;color:var(--dim)}
+.track .time{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.12em;color:var(--text-dim)}
 .track .missing{font:500 9px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--dim)}
+  text-transform:uppercase;color:var(--text-dim)}
 
 /* --- portrait --- */
-.portrait{background:var(--acc);border-radius:3px;overflow:hidden;align-self:start}
+/* The portrait is a duotone: a greyscale image multiplied onto a coloured
+   plate, so the plate's colour IS the image's colour. Amber into terracotta
+   — a warm sepia, which is the one treatment that reads as a photographic
+   choice rather than as a colour wash over a photo. */
+.portrait{background:linear-gradient(145deg,var(--acc) 0%,var(--acc-2) 100%);
+  border-radius:3px;overflow:hidden;align-self:start;
+  box-shadow:var(--shadow-lg)}
 .portrait img{filter:grayscale(1) contrast(1.12) brightness(1.04);mix-blend-mode:multiply;width:100%}
 dl.stats{margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:20px}
 dl.stats dt{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:7px}
 dl.stats dd{font-family:'Instrument Serif',Georgia,serif;font-size:20px}
 
 /* --- rates --- */
-.rate{display:flex;flex-direction:column;gap:18px;padding:28px;
-  border:1px solid rgba(242,237,225,.11);border-radius:4px}
-.rate.lead{border-color:rgba(233,200,70,.34);background:rgba(233,200,70,.04)}
+.rate{position:relative;display:flex;flex-direction:column;gap:18px;padding:28px;
+  border:1px solid rgb(var(--text-rgb) / .14);border-radius:4px;overflow:hidden;
+  background:var(--surface);box-shadow:var(--shadow-sm)}
+/* a colour rule along the top edge tells the three cards apart at a glance,
+   before any of the words are read */
+.rate::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--rule,var(--acc))}
+.g-rates > .rate:nth-child(1){--rule:var(--acc-2)}
+.g-rates > .rate:nth-child(2){--rule:var(--acc-3)}
+.g-rates > .rate:nth-child(3){--rule:var(--acc)}
+/* two layers, not one: the rose film has to sit ON the card's own white, or
+   the lead card goes translucent and loses its edge against the wash */
+.rate.lead{border-color:var(--acc);box-shadow:0 8px 24px rgb(var(--acc-rgb) / .34);
+  background:linear-gradient(rgb(var(--acc-rgb) / .14),rgb(var(--acc-rgb) / .14)),var(--surface)}
 .rate h3{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:26px}
 .price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .price .from,.price .unit{font:500 10px/1 'Geist Mono',ui-monospace,monospace;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
-.price .fig{font-family:'Instrument Serif',Georgia,serif;font-size:38px;color:var(--acc)}
+  letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim)}
+/* Large type normally only owes 3:1, which is why this was the bright tone
+   under the old palette — but amber is 2.2:1 on ivory and misses even that,
+   so the price takes the deep tone. It still reads as the loudest number on
+   the page at 38px. */
+.price .fig{font-family:'Instrument Serif',Georgia,serif;font-size:38px;color:var(--acc-deep)}
 .rate ul{list-style:none;display:flex;flex-direction:column;gap:10px;
-  font-size:15px;line-height:1.5;color:var(--body)}
+  font-size:15px;line-height:1.5;color:var(--text-2)}
 
 /* --- booking --- */
 .contact a{display:flex;align-items:center;justify-content:space-between;gap:16px;
-  padding:16px 0;border-top:1px solid rgba(242,237,225,.12);color:var(--cream);
+  padding:16px 0;border-top:1px solid rgb(var(--text-rgb) / .16);color:var(--text);
   transition:color .15s;min-height:56px}
-.contact a:last-child{border-bottom:1px solid rgba(242,237,225,.12)}
-.contact a:hover{color:var(--acc)}
+.contact a:last-child{border-bottom:1px solid rgb(var(--text-rgb) / .16)}
+.contact a:hover{color:var(--acc-deep)}
 .contact .lbl{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--dim)}
+  text-transform:uppercase;color:var(--text-dim)}
 form{display:flex;flex-direction:column;gap:18px;padding:clamp(22px,3vw,34px);
-  border:1px solid rgba(242,237,225,.13);border-radius:4px;background:var(--ink)}
+  border:1px solid rgb(var(--text-rgb) / .14);border-radius:4px;background:var(--surface);
+  box-shadow:var(--shadow-sm)}
 form label{display:flex;flex-direction:column;gap:9px}
 form .cap{font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.18em;
-  text-transform:uppercase;color:var(--dim)}
-form input,form textarea{padding:13px 14px;background:rgba(242,237,225,.05);
-  border:1px solid rgba(242,237,225,.14);border-radius:3px;
+  text-transform:uppercase;color:var(--text-dim)}
+form input,form textarea{padding:13px 14px;background:var(--bg);
+  border:1px solid rgb(var(--text-rgb) / .20);border-radius:3px;
   font-size:16px;outline:none;transition:border-color .15s}  /* 16px stops iOS zoom */
 form textarea{line-height:1.5;resize:vertical}
 form input:focus,form textarea:focus{border-color:var(--acc)}
-.solid{padding:15px 24px;background:var(--acc);color:var(--ink);border:none;border-radius:999px;
+/* The one button that matters gets the full ramp across it. Both stops are
+   the -deep tones: this carries white text at 15px, and white on the bright
+   amber is 1.9:1 — unreadable. */
+.solid{padding:15px 24px;background:linear-gradient(100deg,var(--acc-deep) 0%,var(--acc-2-deep) 100%);
+  color:var(--on-acc);border:none;border-radius:999px;
   font-size:15px;font-weight:600;cursor:pointer;
   transition:transform .15s var(--release),box-shadow .15s}
-.solid:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(233,200,70,.22)}
-.note-sm{font:500 9px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;color:var(--dim)}
+.solid:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.note-sm{font:500 9px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:.1em;color:var(--text-dim)}
 
-footer{position:relative;z-index:4;border-top:1px solid rgba(242,237,225,.09);
+footer{position:relative;z-index:4;border-top:1px solid rgb(var(--text-rgb) / .14);
   padding:34px var(--gut);display:flex;flex-wrap:wrap;gap:14px;
   align-items:center;justify-content:space-between;max-width:var(--band);margin:0 auto}
 footer .left{display:flex;align-items:center;gap:10px;
   font-family:'Instrument Serif',Georgia,serif;font-size:17px}
 footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--dim)}
+  text-transform:uppercase;color:var(--text-dim)}
 
 /* ============ loading intro ============
    Five channel bars arrive as a level readout with a quarter note on the
    centre line; a playhead sweeps across, sounds the note, and releases each
    channel into a petal as it clears that channel's right end. ~1.9s. */
+/* The loader is the very first thing anyone sees, and for two seconds it is
+   the ONLY thing — so it has to open bright or the whole site reads dark
+   before a pixel has been scrolled. */
 #loader{
-  position:fixed;inset:0;z-index:100;background:var(--ink);
+  position:fixed;inset:0;z-index:100;
+  background:
+    radial-gradient(90% 72% at 50% 40%, rgb(var(--acc-rgb) / .24), rgb(var(--acc-rgb) / 0) 64%),
+    radial-gradient(82% 66% at 14% 98%, rgb(var(--acc-2-rgb) / .20), rgb(var(--acc-2-rgb) / 0) 68%),
+    radial-gradient(82% 66% at 92% 92%, rgb(var(--acc-3-rgb) / .18), rgb(var(--acc-3-rgb) / 0) 70%),
+    var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;
   transition:opacity .7s ease, visibility .7s;
   cursor:pointer;
@@ -320,11 +634,17 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
 #loader.reset *{animation:none !important}
 #ldhint{
   font:500 9px/1 'Geist Mono',ui-monospace,monospace;letter-spacing:.22em;
-  text-transform:uppercase;color:var(--dim);
+  text-transform:uppercase;color:var(--text-dim);
   transition:opacity .4s ease;
   animation:ldHint .6s var(--release) 1.5s both;
 }
 @keyframes ldHint{from{opacity:0}to{opacity:.75}}
+/* The transport's fills are written as presentation attributes in the SVG so
+   the mark is still right with CSS off; these override them per theme. */
+.ld-head,.ld-stem{fill:var(--acc-deep)}
+.ld-nhead{fill:var(--acc)}
+.ld-ring{stroke:var(--acc)}
+
 /* MUST be `0 0`. With transform-box:view-box, browsers resolve percentages
    against the viewBox size but ignore its -50 -50 min-x/min-y, so 50% pivots
    on the corner and every rotated petal swings off-canvas. */
@@ -335,7 +655,7 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
 
 /* transport is the one thing timed linear — it does not ease */
 @keyframes ldSweep{0%{transform:translateX(-46px);opacity:0}9%{opacity:1}84%{opacity:1}100%{transform:translateX(46px);opacity:0}}
-.ld-head{filter:drop-shadow(0 0 2.5px rgba(233,200,70,.55));animation:ldSweep .62s linear .46s both}
+.ld-head{filter:drop-shadow(0 0 2.5px rgb(var(--acc-rgb) / .55));animation:ldSweep .62s linear .46s both}
 
 /* Each petal is a <rect>: with rx=w/2, ry=h/2 it renders as a true ellipse,
    and at rx=ry=half-thickness it is a bar with round caps. An ellipse
@@ -417,8 +737,10 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   91.667%{x:-13.002px;y:-47.996px;width:26.002px;height:43.997px;rx:13.001px;ry:21.999px;transform:rotate(143.991deg)}
   100%{x:-13px;y:-48px;width:26px;height:44px;rx:13px;ry:22px;transform:rotate(144deg)}
 }
-@keyframes ldFlash{from{fill:var(--acc)}to{fill:var(--cream)}}
-.ld-pet{fill:var(--cream);animation-duration:.58s,.52s;animation-timing-function:linear,ease-out;
+/* each channel flashes amber as it is released, then settles to the light
+   pink the finished jasmine is drawn in */
+@keyframes ldFlash{from{fill:var(--acc)}to{fill:var(--bloom)}}
+.ld-pet{fill:var(--bloom);animation-duration:.58s,.52s;animation-timing-function:linear,ease-out;
   animation-delay:var(--bd),var(--bd);animation-fill-mode:both,forwards}
 .ld-p0{animation-name:ldBloom0,ldFlash}
 .ld-p1{animation-name:ldBloom1,ldFlash}
@@ -442,7 +764,7 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
 .ld-name{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(30px,7vw,38px);line-height:1;
   animation:ldRise .7s var(--release) 1.05s both}
 @keyframes ldRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-.ld-sub{font:500 10px/1 'Geist Mono',ui-monospace,monospace;text-transform:uppercase;color:var(--dim);
+.ld-sub{font:500 10px/1 'Geist Mono',ui-monospace,monospace;text-transform:uppercase;color:var(--text-dim);
   animation:ldSpread .75s var(--release) 1.16s both}
 @keyframes ldSpread{from{opacity:0;letter-spacing:.03em}to{opacity:1;letter-spacing:.34em}}
 
@@ -452,6 +774,16 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   /* the instrument moves behind the copy and steps right back, so text
      stays readable on a small screen instead of competing with strings */
   #rig{opacity:.4}
+  /* Same problem, same fix, for the ground. On desktop the wash is kept in
+     the right half, clear of the copy column — but here the copy is
+     full-width (see .copy max-width:none below), so it runs straight under
+     the glow and there is nowhere to move it to. Pulling the whole layer
+     back keeps the 10px kicker above 4.5:1.
+     The dark theme needs its own line, not just this one: :root[data-theme]
+     is (0,1,1) and beats a bare :root at (0,0,1) regardless of order, so
+     the dark value set further up would otherwise win here. */
+  :root{--wash-op:.5}
+  :root[data-theme="dark"]{--wash-op:.34}
   #ruler{display:none}
   /* On a phone the copy is full-width (max-width:none), so headlines run to
      ~x=370 and ANY rule would cross them — a shortened one still cut 104px
@@ -471,7 +803,10 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
      Book pill must survive at every width, the links are expendable */
   #topbar .links{display:none}
   #topbar .book{padding:10px 16px;font-size:13px}
-  html{scroll-padding-top:62px}
+  /* 67px bar + clearance. The theme toggle is a 44px tap target, which made
+     the bar 6px taller than the 62px this used to be — at that value an
+     in-page anchor landed underneath the bar. */
+  html{scroll-padding-top:74px}
   #intro,.chapter{padding-left:var(--gut);padding-right:var(--gut)}
   #intro h1{font-size:clamp(36px,10vw,54px);max-width:none}
   .chapter{padding-top:7vh;padding-bottom:7vh}
@@ -512,10 +847,10 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
     <g class="ld-bar" style="--in:.10s"><rect class="ld-pet ld-p2" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.81s"/></g>
     <g class="ld-bar" style="--in:.15s"><rect class="ld-pet ld-p3" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.93s"/></g>
     <g class="ld-bar" style="--in:.20s"><rect class="ld-pet ld-p4" x="-13" y="-48" width="26" height="44" rx="13" ry="22" style="--bd:.88s"/></g>
-    <rect class="ld-head" x="-0.55" y="-31" width="1.1" height="62" rx=".55" fill="#E9C846"/>
-    <circle class="ld-ring" r="26" fill="none" stroke="#E9C846" stroke-width="2" vector-effect="non-scaling-stroke"/>
-    <rect class="ld-stem" x="3.863" y="-19.2" width="1.6" height="18.44" rx=".8" fill="#E9C846"/>
-    <ellipse class="ld-nhead" rx="10" ry="10" fill="#E9C846"/>
+    <rect class="ld-head" x="-0.55" y="-31" width="1.1" height="62" rx=".55" fill="#8A5C0C"/>
+    <circle class="ld-ring" r="26" fill="none" stroke="#D9A227" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    <rect class="ld-stem" x="3.863" y="-19.2" width="1.6" height="18.44" rx=".8" fill="#8A5C0C"/>
+    <ellipse class="ld-nhead" rx="10" ry="10" fill="#D9A227"/>
   </svg>
   <div class="ld-word">
     <div class="ld-name">Yasmin Eden</div>
@@ -554,6 +889,7 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
 })();
 </script>
 
+<div id="wash" aria-hidden="true"></div>
 <div id="rig" aria-hidden="true"><svg id="stage" preserveAspectRatio="none"></svg></div>
 <div id="head" aria-hidden="true"><span class="rule"></span><span class="tc" id="tc">00:00</span><span class="rule"></span></div>
 <nav id="ruler" aria-hidden="true"></nav>
@@ -562,8 +898,8 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
   <div class="inner">
     <a class="wordmark" href="#intro">
       <svg id="knob" viewBox="-50 -50 100 100" style="width:22px;height:22px;flex:none;transition:transform .18s linear" aria-hidden="true">
-        <g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
-        <circle r="10" fill="#E9C846"/>
+        <g fill="#DD7E99"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
+        <circle r="10" fill="#D9A227"/>
       </svg>
       <span>Yasmin Eden</span>
     </a>
@@ -573,6 +909,22 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
         <a href="#about">About</a>
         <a href="#rates">Rates</a>
       </nav>
+      <button id="theme" type="button" aria-label="Switch to dark theme">
+        <!-- Both icons are built on one circle centred at (10,10) so they
+             sit on the same optical axis and swap without shifting.
+             Moon: a 7.2 disc with a 5.6 disc bitten out of it. The two arcs
+             MUST have different radii — equal ones give a symmetric lens,
+             not a crescent, which is what made the first attempt look bent.
+             Sun: core at 3.8, rays from 6.0 out to 7.9, so both icons end
+             up about 16px across inside the 20 box. -->
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path class="i-moon" d="M17.2 10.63A7.2 7.2 0 1 1 9.37 2.8 5.6 5.6 0 0 0 17.2 10.63Z"/>
+          <g class="i-sun">
+            <circle cx="10" cy="10" r="3.8"/>
+            <path d="M16 10H17.9M4 10H2.1M10 4V2.1M10 16V17.9M14.24 5.76L15.59 4.41M5.76 14.24L4.41 15.59M14.24 14.24L15.59 15.59M5.76 5.76L4.41 4.41"/>
+          </g>
+        </svg>
+      </button>
       <a class="book" href="#book">Book a session</a>
     </div>
   </div>
@@ -724,7 +1076,7 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
       </div>
       <div>
         <div class="head2" data-reveal><span class="num">02</span><h2>At the desk</h2></div>
-        <p class="lede" data-reveal style="margin-bottom:18px;color:var(--body);font-size:17px;line-height:1.68">
+        <p class="lede" data-reveal style="margin-bottom:18px;color:var(--text-2);font-size:17px;line-height:1.68">
           I mix and master from [city], and record on location when a room is worth capturing. I like records that keep the room in them — the chair creak, the breath before the line, the sound of four people playing at once.</p>
         <dl class="stats" data-reveal>
           <div><dt>Based in</dt><dd>[The Hague]</dd></div>
@@ -761,7 +1113,7 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
     <div class="grid g-two" style="align-items:start">
       <div>
         <div class="head2" data-reveal><span class="num">04</span><h2>Book a session</h2></div>
-        <p data-reveal style="color:var(--body);font-size:17px;line-height:1.65;max-width:40ch;margin-bottom:22px">
+        <p class="bodycopy" data-reveal style="color:var(--text-2);font-size:17px;line-height:1.65;max-width:40ch;margin-bottom:22px">
           Tell me about the record and I'll come back within two working days with a quote and some dates.</p>
         <div class="contact" data-reveal>
           <a href="mailto:[hello@example.com]"><span class="lbl">Email</span><span>[hello@example.com]</span></a>
@@ -784,13 +1136,341 @@ footer .right{font:500 10px/1 'Geist Mono',ui-monospace,monospace;letter-spacing
 <footer>
   <span class="left">
     <svg viewBox="-50 -50 100 100" style="width:17px;height:17px" aria-hidden="true">
-      <g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
-      <circle r="10" fill="#E9C846"/>
+      <g fill="#DD7E99"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
+      <circle r="10" fill="#D9A227"/>
     </svg>
-    Yasmin Eden Sound
+    <span class="fname">Yasmin Eden Sound</span>
   </span>
   <span class="right">© [Year] · [City]</span>
 </footer>
+
+<script>
+/* ============ content hydration ============================================
+   Everything written above also lives in content.js, and /editor.html
+   rewrites that file. This script copies content.js over the markup, which
+   makes the HTML above serve two purposes at once: it is the day-one copy,
+   AND it is the fallback — if content.js is missing or fails to parse, the
+   page still reads exactly as it does now instead of going blank.
+
+   It MUST run before the main script below. That one maps the DOM once at
+   startup — a ruler tick per .chapter, a player per .track, a fan per
+   [data-fan] — so it has to see the final nodes, not the ones we replace.
+
+   A missing key is not an error: anything content.js does not mention keeps
+   whatever the markup already said.
+   ======================================================================== */
+(() => {
+'use strict';
+const preview = /[?&]preview=1/.test(location.search);
+let C = window.YE_CONTENT;
+
+/* The editor shows unsaved work by parking the draft in localStorage and
+   pointing an iframe at index.html?preview=1 — same origin, so it can read
+   it. The live site never looks at this. */
+if (preview){
+  try {
+    const draft = localStorage.getItem('ye-draft-content');
+    if (draft) C = JSON.parse(draft);
+  } catch(e){ console.warn('[content] draft unreadable', e); }
+}
+if (!C) { console.warn('[content] content.js did not load — showing the copy baked into index.html'); return; }
+
+/* ---------------- tiny builders ---------------- */
+const $  = sel => document.querySelector(sel);
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+};
+const setText = (sel, v) => { const n = $(sel); if (n && v != null) n.textContent = v; };
+const setAttr = (sel, a, v) => { const n = $(sel); if (n && v != null) n.setAttribute(a, v); };
+
+/* ---------------- head ---------------- */
+if (C.meta){
+  if (C.meta.title) document.title = C.meta.title;
+  setAttr('meta[name="description"]', 'content', C.meta.description);
+  /* Pre-launch the page asks Google to stay away. Once she flips the launch
+     switch in the editor the tag has to GO, not say "index" — a removed
+     noindex is the only thing search engines treat as a clean slate. */
+  const rb = $('meta[name="robots"]');
+  if (C.meta.hideFromGoogle === false && rb) rb.remove();
+  if (C.meta.hideFromGoogle === true && !rb){
+    const m = el('meta'); m.name = 'robots'; m.content = 'noindex, nofollow';
+    document.head.appendChild(m);
+  }
+}
+
+/* ---------------- brand + chrome ---------------- */
+if (C.brand){
+  setText('#topbar .wordmark span', C.brand.nav);
+  setText('#loader .ld-name', C.brand.loaderName);
+  setText('#loader .ld-sub', C.brand.loaderSub);
+  setText('#ldhint', C.brand.loaderHint);
+}
+if (C.nav){
+  if (Array.isArray(C.nav.links)){
+    const box = $('#topbar .links');
+    if (box){
+      box.textContent = '';
+      C.nav.links.forEach(l => {
+        const a = el('a', null, l.label);
+        a.href = l.href || '#';
+        box.appendChild(a);
+      });
+    }
+  }
+  if (C.nav.cta){
+    setText('#topbar .book', C.nav.cta.label);
+    setAttr('#topbar .book', 'href', C.nav.cta.href);
+  }
+}
+if (C.footer){
+  setText('footer .fname', C.footer.name);
+  setText('footer .right', C.footer.right);
+}
+
+/* ---------------- intro ---------------- */
+if (C.intro){
+  setText('#intro .eyebrow', C.intro.eyebrow);
+  setText('#intro h1', C.intro.heading);
+  setText('#intro .sub', C.intro.sub);
+  setText('#intro .scrollcue', C.intro.cue);
+}
+
+/* ---------------- the journey ----------------
+   Chapters are rebuilt rather than patched, because she can add, remove and
+   reorder them. The ruler ticks and the strings both count .chapter nodes
+   off the DOM, so a new chapter joins the instrument for free. */
+function photoCard(p, i){
+  const b = el('button', 'fan-card' + (p.logo ? ' logo' : ''));
+  b.type = 'button';
+  b.dataset.img = p.file || '';
+  b.setAttribute('aria-label', p.label || ('Photo ' + (i + 1)));
+  /* The slot is what shows until the file loads: the label and the exact
+     filename it is waiting for. An empty frame that names its own file is
+     how a half-finished page still tells you what to do next. */
+  const slot = el('span', 'slot');
+  slot.appendChild(el('b', null, 'Photo ' + (i + 1)));
+  slot.appendChild(document.createTextNode(p.label || ''));
+  slot.appendChild(el('br'));
+  slot.appendChild(document.createTextNode(p.file || ''));
+  b.appendChild(slot);
+  return b;
+}
+
+function chapterNode(ch){
+  const sec = el('section', 'chapter');
+  const copy = el('div', 'copy');
+  copy.setAttribute('data-reveal', '');
+  sec.appendChild(copy);
+
+  if (ch.kicker) copy.appendChild(el('span', 'kicker', ch.kicker));
+  if (ch.heading) copy.appendChild(el('h2', null, ch.heading));
+  (ch.paragraphs || []).forEach(p => {
+    const text = typeof p === 'string' ? p : p.text;
+    if (!text) return;
+    copy.appendChild(el('p', (typeof p !== 'string' && p.muted) ? 'ph' : null, text));
+  });
+
+  const photos = (ch.photos || []).filter(p => p && p.file);
+  if (photos.length || ch.link){
+    const fig = el('figure', 'media');
+    if (photos.length){
+      const fan = el('div', 'fan');
+      fan.setAttribute('data-fan', '');
+      photos.forEach((p, i) => fan.appendChild(photoCard(p, i)));
+      fig.appendChild(fan);
+
+      const cap = el('figcaption');
+      cap.appendChild(el('span', 'fan-count'));            // filled by the fan script
+      if (photos.length > 1) cap.appendChild(el('span', 'fan-hint', 'Tap to flip'));
+      if (ch.caption) cap.appendChild(document.createTextNode(' · ' + ch.caption));
+      fig.appendChild(cap);
+    }
+    if (ch.link && ch.link.label){
+      const a = el('a', 'lnk', ch.link.label);
+      a.href = ch.link.href || '#';
+      fig.appendChild(a);
+    }
+    copy.appendChild(fig);
+  }
+  return sec;
+}
+
+if (Array.isArray(C.chapters) && C.chapters.length){
+  const main = $('main');
+  const old = [...main.querySelectorAll('section.chapter')];
+  // insert where the chapters already are: just after the last one
+  const anchor = old.length ? old[old.length - 1].nextSibling : $('#work');
+  const frag = document.createDocumentFragment();
+  C.chapters.forEach(ch => frag.appendChild(chapterNode(ch)));
+  old.forEach(n => n.remove());
+  main.insertBefore(frag, anchor);
+}
+
+/* ---------------- selected work ---------------- */
+const PLAY_SVG = '<svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>';
+function trackNode(t){
+  const art = el('article', 'track');
+  art.setAttribute('data-reveal', '');
+  art.dataset.src = t.file || '';
+
+  const row = el('div', 'row');
+  const left = el('div');
+  left.appendChild(el('div', 'ttl', t.title || ''));
+  left.appendChild(el('div', 'cred', t.credit || ''));
+  row.appendChild(left);
+  row.appendChild(el('div', 'state', 'Idle'));
+  art.appendChild(row);
+
+  const cv = el('canvas');
+  cv.height = 88; cv.setAttribute('aria-hidden', 'true');
+  art.appendChild(cv);
+
+  const ctl = el('div', 'ctl');
+  const btn = el('button', 'play');
+  btn.setAttribute('aria-label', 'Play ' + (t.title || 'track'));
+  btn.innerHTML = PLAY_SVG;
+  ctl.appendChild(btn);
+  ctl.appendChild(el('span', 'time', '0:00'));
+  art.appendChild(ctl);
+  return art;
+}
+
+if (C.work){
+  setText('#work .num', C.work.num);
+  setText('#work .head2 h2', C.work.heading);
+  setText('#work .lede', C.work.lede);
+  if (Array.isArray(C.work.tracks)){
+    const grid = $('#work .g-work');
+    if (grid){
+      grid.textContent = '';
+      C.work.tracks.forEach(t => grid.appendChild(trackNode(t)));
+    }
+  }
+}
+
+/* ---------------- at the desk ---------------- */
+if (C.about){
+  setText('#about .num', C.about.num);
+  setText('#about .head2 h2', C.about.heading);
+  setText('#about .lede', C.about.body);
+  if (C.about.photo){
+    setAttr('#about .portrait img', 'src', C.about.photo.file);
+    setAttr('#about .portrait img', 'alt', C.about.photo.alt);
+  }
+  if (Array.isArray(C.about.stats)){
+    const dl = $('#about .stats');
+    if (dl){
+      dl.textContent = '';
+      C.about.stats.forEach(s => {
+        const wrap = el('div');
+        wrap.appendChild(el('dt', null, s.label || ''));
+        wrap.appendChild(el('dd', null, s.value || ''));
+        dl.appendChild(wrap);
+      });
+    }
+  }
+}
+
+/* ---------------- services & rates ---------------- */
+if (C.rates){
+  setText('#rates .num', C.rates.num);
+  setText('#rates .head2 h2', C.rates.heading);
+  setText('#rates .lede', C.rates.lede);
+  if (Array.isArray(C.rates.cards)){
+    const grid = $('#rates .g-rates');
+    if (grid){
+      grid.textContent = '';
+      C.rates.cards.forEach(c => {
+        const card = el('div', 'rate' + (c.highlight ? ' lead' : ''));
+        card.setAttribute('data-reveal', '');
+        card.appendChild(el('h3', null, c.heading || ''));
+        const price = el('div', 'price');
+        if (c.fromLabel) price.appendChild(el('span', 'from', c.fromLabel));
+        price.appendChild(el('span', 'fig', c.price || ''));
+        if (c.unit) price.appendChild(el('span', 'unit', c.unit));
+        card.appendChild(price);
+        const ul = el('ul');
+        (c.bullets || []).forEach(b => { if (b) ul.appendChild(el('li', null, b)); });
+        card.appendChild(ul);
+        grid.appendChild(card);
+      });
+    }
+  }
+}
+
+/* ---------------- book a session ---------------- */
+if (C.book){
+  setText('#book .num', C.book.num);
+  setText('#book .head2 h2', C.book.heading);
+  setText('#book .bodycopy', C.book.body);
+  if (Array.isArray(C.book.contacts)){
+    const box = $('#book .contact');
+    if (box){
+      box.textContent = '';
+      C.book.contacts.forEach(c => {
+        const a = el('a');
+        a.href = c.href || '#';
+        a.appendChild(el('span', 'lbl', c.label || ''));
+        a.appendChild(el('span', null, c.value || ''));
+        box.appendChild(a);
+      });
+    }
+  }
+  const f = C.book.form;
+  if (f){
+    setAttr('#book form', 'action', f.endpoint);
+    const caps = document.querySelectorAll('#book form .cap');
+    if (caps[0] && f.nameLabel)    caps[0].textContent = f.nameLabel;
+    if (caps[1] && f.emailLabel)   caps[1].textContent = f.emailLabel;
+    if (caps[2] && f.messageLabel) caps[2].textContent = f.messageLabel;
+    setText('#book form button[type="submit"]', f.submitLabel);
+  }
+}
+
+/* ---------------- preview plumbing ----------------
+   Only ever active inside the editor's iframe. The editor reloads this frame
+   on every change — a reload is the one way to be certain the instrument,
+   the players and the fans all re-initialise against the new DOM — so the
+   scroll position has to survive it, or she'd be thrown back to the top on
+   every keystroke. */
+if (preview){
+  const KEY = 'ye-preview-scroll';
+  let userScrolled = false;
+  try { history.scrollRestoration = 'manual'; } catch(e){}
+
+  const want = parseFloat(sessionStorage.getItem(KEY) || '0') || 0;
+  const restore = () => { if (!userScrolled && want) window.scrollTo(0, want); };
+  restore();
+  // fonts and photos land late and move everything; re-seat once they have
+  addEventListener('load', restore);
+  setTimeout(restore, 400);
+
+  ['wheel','touchstart','keydown'].forEach(ev =>
+    addEventListener(ev, () => { userScrolled = true; }, {passive:true}));
+  addEventListener('scroll', () => {
+    sessionStorage.setItem(KEY, String(Math.round(window.scrollY)));
+  }, {passive:true});
+
+  // clicking a field in the editor jogs the preview to the matching section
+  addEventListener('message', e => {
+    if (e.origin !== location.origin && e.origin !== 'null') return;
+    const m = e.data;
+    if (!m || m.type !== 'ye-scroll' || !m.sel) return;
+    // nth picks one of a repeated section — chapters are siblings of other
+    // <section>s, so :nth-of-type() in a selector would count the wrong thing
+    const target = m.nth != null
+      ? document.querySelectorAll(m.sel)[m.nth]
+      : document.querySelector(m.sel);
+    if (!target) return;
+    userScrolled = true;
+    target.scrollIntoView({block: 'center'});
+  });
+}
+})();
+</script>
 
 <script>
 (() => {
@@ -813,6 +1493,49 @@ const CH = [
   { count:5, spread:0.20, amp:3,  freq:.011, drift:.1,  scale:[293.66,349.23,440.00,523.25,587.33] },
 ];
 const SLOTS = 6, LAST = CH.length - 1;
+
+/* ---------------- the journey's colour ----------------
+   One entry per CH step, per theme. Kept beside CH rather than inside it
+   because CH is the instrument — string count, amplitude, pitch — and that
+   does not change with the theme. Only the colour does.
+
+   `wash` is the source for the background glows; `ink` is the readable
+   form, used for the kicker, the chapter headline, the timecode, the ruler,
+   the strings and the falling notes. They are NOT interchangeable, and the
+   reason flips between the two themes:
+
+     light — the pastels sit at about 1.3:1 on ivory, so a `wash` on text is
+             illegible, not merely dim. Every light `ink` clears 4.5:1 on
+             --bg; the brightness lives in `wash` and in the 32–60px
+             headline, which only owes 3:1.
+     dark  — the deep tones sit at about 3.5:1 on espresso, under the 4.5:1
+             a 10px label needs, so the inks are the LIGHTER twin here.
+
+   Light runs amber → sage → slate → terracotta → teal → clay; dark runs
+   gold → amber → clay → ember → rose. Both close on their theme's lead
+   colour, so the journey ends where the wordmark is. */
+const RAMP = {
+  light: [
+    { wash:[230,190,120], ink:[138, 92, 12] },   // amber
+    { wash:[178,198,158], ink:[ 74,104, 56] },   // sage
+    { wash:[160,186,210], ink:[ 50, 92,124] },   // slate blue
+    { wash:[224,168,140], ink:[150, 76, 46] },   // terracotta
+    { wash:[152,196,194], ink:[ 42,100, 98] },   // dusty teal
+    { wash:[214,180,156], ink:[128, 86, 58] },   // clay
+    { wash:[230,190,120], ink:[138, 92, 12] },   // home again
+  ],
+  dark: [
+    { wash:[233,200, 70], ink:[233,200, 70] },   // gold
+    { wash:[214,152, 62], ink:[240,169, 78] },   // amber
+    { wash:[178,104, 60], ink:[224,138, 90] },   // clay
+    { wash:[206, 98, 62], ink:[240,133, 94] },   // ember
+    { wash:[176, 80,100], ink:[232,138,160] },   // rose
+    { wash:[168, 96, 63], ink:[224,138, 90] },   // clay, deeper
+    { wash:[226,186, 80], ink:[233,200, 70] },   // home again
+  ],
+};
+/* swapped wholesale by setTheme(); the renderer reads it every frame */
+let ramp = RAMP.light;
 
 const stage = document.getElementById('stage');
 const headEl = document.getElementById('head');
@@ -1056,6 +1779,71 @@ players.forEach((P, k) => {
     0.30 + 0.52 * Math.abs(Math.sin(i * 0.9 + k * 2.1) * Math.cos(i * 0.31 + k)));
 });
 
+/* ============ theme ======================================================
+   The stylesheet does almost all of this on its own — one attribute on
+   <html> and every token flips. Three things live outside CSS and have to
+   be driven from here:
+
+     1. the journey ramp, which is JS data (RAMP), not CSS;
+     2. the meters, which are canvas — a 2D context cannot read a custom
+        property, so the colours are mirrored here and the cached per-card
+        gradients are invalidated;
+     3. the button's label, which has to describe the ACTION, not the
+        state, or a screen reader announces the opposite of what pressing
+        it does.
+
+   <html data-theme> itself is already set by the inline script in <head>,
+   before first paint. This runs later and must not fight it — hence
+   reading the attribute back rather than assuming light.
+   ======================================================================== */
+const METER = { peak:'', floor:'', idle:'' };
+const themeBtn = document.getElementById('theme');
+
+function setTheme(name, persist){
+  const dark = name === 'dark';
+  // absent rather than ="light" — :root alone is the light theme, so there
+  // is nothing for a light attribute to select and it would only invite a
+  // [data-theme="light"] rule that quietly never matches the default
+  if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+  else      document.documentElement.removeAttribute('data-theme');
+
+  ramp = dark ? RAMP.dark : RAMP.light;
+
+  // mirrors of --acc-2 / --acc / --text-rgb for the canvas meters
+  METER.peak  = dark ? '#E8734A' : '#C4714B';
+  METER.floor = dark ? '#E9C846' : '#D9A227';
+  METER.idle  = dark ? 'rgba(247,241,228,.22)' : 'rgba(42,38,34,.26)';
+  // same pixel height, different colours — force the ramp to be rebuilt
+  players.forEach(P => { P.gradH = -1; });
+
+  if (themeBtn)
+    themeBtn.setAttribute('aria-label',
+      dark ? 'Switch to light theme' : 'Switch to dark theme');
+
+  if (persist) { try { localStorage.setItem('ye-theme', name); } catch(e){} }
+}
+
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+
+/* The <head> script already picked the theme and set the attribute before
+   paint; read it back rather than deciding again, so the two can never
+   disagree. persist:false — landing on dark because the DEVICE is dark is
+   not a choice the visitor made, and writing it would freeze them there
+   after they next switch their OS back. */
+setTheme(isDark() ? 'dark' : 'light', false);
+
+if (themeBtn) themeBtn.addEventListener('click', () => setTheme(isDark() ? 'light' : 'dark', true));
+
+/* Follow the OS while it is still the thing deciding. Once there is a
+   stored choice this stops mattering, which is why the guard reads storage
+   every time instead of caching it — the very click that stores a choice
+   also has to switch this off. */
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  let stored = null;
+  try { stored = localStorage.getItem('ye-theme'); } catch(err){}
+  if (!stored) setTheme(e.matches ? 'dark' : 'light', false);
+});
+
 function drawMeters(){
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   for (const P of players){
@@ -1070,7 +1858,21 @@ function drawMeters(){
     const gap = 3 * dpr, bw = (w - gap * (BARS - 1)) / BARS;
     const live = playingCard === P && P.an;
     if (live) P.an.getByteFrequencyData(P.bins);
-    ctx2d.fillStyle = live ? '#E9C846' : 'rgba(242,237,225,.20)';
+    /* A playing meter runs the second accent at the peaks down to the lead
+       one at the floor, so level reads as heat rather than as one flat
+       colour. Cached against the buffer height — rebuilding the gradient
+       every frame, for every card, would allocate ~180 objects a second
+       for a ramp that never changes. setTheme() clears gradH to force the
+       rebuild, since the height has not moved but the colours have. */
+    if (live && P.gradH !== h){
+      const g = ctx2d.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, METER.peak);
+      g.addColorStop(1, METER.floor);
+      P.grad = g; P.gradH = h;
+    }
+    // idle bars pick up the text colour at low alpha, so they invert with
+    // the theme — a flat grey reads dead on ivory and invisible on espresso
+    ctx2d.fillStyle = live ? P.grad : METER.idle;
     for (let i = 0; i < BARS; i++){
       // log-ish frequency mapping — a real spectrum falls left to right
       const idx = Math.floor(Math.pow(i / BARS, 1.7) * P_binCount(P));
@@ -1148,6 +1950,28 @@ const notes = [];
 let sinceSpawn = 0;
 const SPAWN_PX = 190;
 const lerp = (a,b,t) => a + (b-a)*t;
+
+/* ---- the journey's colour, written to CSS -----------------------------
+   Blends two [r,g,b] triplets into the space-separated form that
+   `rgb(var(--x) / a)` wants, rounded to integers.
+
+   setVar exists because these land on :root, and a custom property there
+   invalidates style for the entire document. Rounding first means the
+   value only changes a few dozen times across the whole journey instead
+   of every frame, and the guard turns the rest into no-ops — so a page
+   nobody is scrolling writes nothing at all. */
+const triplet = (a,b,m) =>
+  Math.round(lerp(a[0],b[0],m)) + ' ' +
+  Math.round(lerp(a[1],b[1],m)) + ' ' +
+  Math.round(lerp(a[2],b[2],m));
+const rootStyle = document.documentElement.style;
+const lastVar = Object.create(null);
+function setVar(name, value){
+  if (lastVar[name] === value) return;
+  lastVar[name] = value;
+  rootStyle.setProperty(name, value);
+}
+
 let t0 = performance.now();
 
 function frame(now){
@@ -1165,6 +1989,21 @@ function frame(now){
   const f = Math.min(1, Math.max(0, t - i));
   const A = CH[i], B = CH[Math.min(LAST, i+1)];
   const activeCh = Math.round(t);
+
+  /* --wash-a is the chapter under you, --wash-b the one after it, so there
+     are always two different hues on screen — parked mid-chapter you get
+     where you are and where you are going, and the lower glow turns into
+     the upper one as you arrive. --hue-ink is the readable twin of
+     --wash-a and drives the kicker, the headline, the timecode, the ruler,
+     the strings and the falling notes.
+
+     Read off `ramp`, not CH, so a theme switch changes the colours without
+     touching the instrument. setVar's guard means the switch costs three
+     writes, and scrolling in either theme costs the same as before. */
+  const rA = ramp[i], rB = ramp[Math.min(LAST, i+1)], rN = ramp[Math.min(LAST, i+2)];
+  setVar('--wash-a',  triplet(rA.wash, rB.wash, f));
+  setVar('--wash-b',  triplet(rB.wash, rN.wash, f));
+  setVar('--hue-ink', triplet(rA.ink,  rB.ink,  f));
 
   // once the journey is over the instrument retires so the commercial
   // half of the page can be read without strings running through it

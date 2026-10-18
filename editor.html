@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Edit the site — Yasmin Eden Sound</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12110E; --panel:#17160F; --raise:#1D1B14;
+  --cream:#F2EDE1; --body:#CFC9BC; --dim:#9A9384; --acc:#E9C846;
+  --line:rgba(242,237,225,.12);
+  --good:#7FB069; --bad:#E07A5F;
+  --mono:500 10px/1.5 'Geist Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--ink);color:var(--cream);
+  font-family:'Instrument Sans',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+code{font-family:'Geist Mono',ui-monospace,monospace}
+a{color:var(--acc)}
+
+/* ---------- gate ---------- */
+#gate{position:fixed;inset:0;z-index:100;background:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px}
+#gate svg{width:68px;height:68px}
+#gate h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:34px;text-align:center}
+#gate p{color:var(--dim);font-size:14px;max-width:34ch;text-align:center;line-height:1.6}
+#gate form{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#gate input{background:var(--raise);border:1px solid var(--line);border-radius:999px;
+  padding:12px 18px;min-width:220px;outline:none}
+#gate input:focus{border-color:var(--acc)}
+#gate .err{color:var(--bad);font:var(--mono);letter-spacing:.1em;text-transform:uppercase;min-height:16px}
+
+/* ---------- chrome ---------- */
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:11px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex:none}
+header .mark{display:flex;align-items:center;gap:9px}
+header .mark svg{width:20px;height:20px;flex:none}
+header .mark b{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:17px}
+header .spacer{flex:1}
+#status{font:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+#status.dirty{color:var(--acc)}
+#status.busy{color:var(--acc)}
+#status.ok{color:var(--good)}
+#status.err{color:var(--bad)}
+
+.btn{background:transparent;border:1px solid var(--line);border-radius:999px;
+  padding:9px 15px;font-size:13px;cursor:pointer;white-space:nowrap;
+  transition:border-color .15s,background .15s,color .15s}
+.btn:hover{border-color:var(--cream)}
+.btn.primary{border-color:var(--acc);color:var(--acc)}
+.btn.primary:hover{background:var(--acc);color:var(--ink)}
+.btn.primary:disabled{opacity:.35;cursor:not-allowed;background:transparent;color:var(--acc)}
+.btn.small{padding:6px 11px;font-size:12px}
+.btn.icon{padding:5px 9px;font:var(--mono);letter-spacing:0}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---------- layout ----------
+   Three columns: the form, the drag handle, the preview. The handle's width
+   is part of the grid so dragging it never has to fight a margin. */
+.shell{flex:1;display:grid;grid-template-columns:var(--split,46%) 7px 1fr;min-height:0}
+.pane{min-height:0;min-width:0}
+#formpane{overflow-y:auto;overflow-x:hidden;padding-bottom:40vh}
+#prevpane{display:flex;flex-direction:column;background:#0C0B09}
+
+/* scrollbars off — the panes still scroll by wheel, touch, keyboard and
+   scrollIntoView, they just stop drawing a gutter down the middle of the UI */
+#formpane,dialog .dbody{scrollbar-width:none;-ms-overflow-style:none}
+#formpane::-webkit-scrollbar,dialog .dbody::-webkit-scrollbar{width:0;height:0;display:none}
+
+/* ---------- the drag handle ---------- */
+#split{
+  position:relative;cursor:col-resize;background:transparent;border:0;padding:0;
+  touch-action:none;                      /* or a touch-drag scrolls the page instead */
+}
+#split::before{                            /* the hairline the panes are divided by */
+  content:'';position:absolute;top:0;bottom:0;left:3px;width:1px;
+  background:var(--line);transition:background .15s,box-shadow .15s;
+}
+#split::after{                             /* the grip, so it reads as draggable */
+  content:'';position:absolute;top:50%;left:1px;width:5px;height:38px;margin-top:-19px;
+  border-radius:3px;background:rgba(242,237,225,.22);transition:background .15s;
+}
+#split:hover::before,#split:focus-visible::before,body.dragging #split::before{background:var(--acc)}
+#split:hover::after,#split:focus-visible::after,body.dragging #split::after{background:var(--acc)}
+#split:focus-visible{outline:none}
+/* while dragging, the iframe must not swallow the pointer, and nothing
+   should highlight as if it were being selected */
+body.dragging{cursor:col-resize;user-select:none}
+body.dragging #frame{pointer-events:none}
+.prevbar{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);flex:none}
+.prevbar span{font:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+#frame{flex:1;width:100%;border:0;background:var(--ink)}
+
+/* ---------- sections ---------- */
+details.sec{border-bottom:1px solid var(--line)}
+details.sec > summary{
+  list-style:none;cursor:pointer;padding:15px 16px;display:flex;align-items:center;gap:10px;
+  font-family:'Instrument Serif',Georgia,serif;font-size:20px;
+}
+details.sec > summary::-webkit-details-marker{display:none}
+details.sec > summary::before{content:'›';color:var(--acc);font-family:'Geist Mono',monospace;
+  transition:transform .18s;display:inline-block}
+details.sec[open] > summary::before{transform:rotate(90deg)}
+details.sec > summary:hover{background:rgba(242,237,225,.03)}
+.secbody{padding:4px 16px 22px}
+.note{color:var(--dim);font-size:13px;line-height:1.6;margin-bottom:16px;max-width:60ch}
+
+.fld{display:block;margin-bottom:15px}
+.fld .lab{display:block;font:var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:6px}
+.fld input:not([type=checkbox]),.fld textarea{
+  width:100%;background:var(--raise);border:1px solid var(--line);border-radius:4px;
+  padding:10px 12px;font-size:14px;line-height:1.55;outline:none;resize:vertical;
+  transition:border-color .15s}
+.fld input:not([type=checkbox]):focus,.fld textarea:focus{border-color:var(--acc)}
+/* not scoped to .fld — list fields carry hints too */
+.hint{display:block;color:var(--dim);font-size:12px;line-height:1.5;margin-top:5px;max-width:58ch}
+.list > .hint{margin:-4px 0 9px}
+
+.sw{display:flex;align-items:flex-start;gap:11px;margin-bottom:15px;cursor:pointer}
+.sw input{appearance:none;flex:none;width:40px;height:23px;border-radius:999px;
+  background:rgba(242,237,225,.12);border:1px solid var(--line);position:relative;cursor:pointer;
+  transition:background .15s,border-color .15s;margin-top:1px}
+.sw input::after{content:'';position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+  background:var(--dim);transition:transform .18s,background .18s}
+.sw input:checked{background:rgba(233,200,70,.22);border-color:var(--acc)}
+.sw input:checked::after{transform:translateX(17px);background:var(--acc)}
+.sw .txt{font-size:14px;line-height:1.45}
+.sw .txt small{display:block;color:var(--dim);font-size:12px;line-height:1.5;margin-top:4px}
+
+/* ---------- repeatable items ---------- */
+.list{margin-bottom:18px}
+.list > .lab{display:block;font:var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:8px}
+details.item{border:1px solid var(--line);border-radius:5px;background:rgba(242,237,225,.02);
+  margin-bottom:9px;overflow:hidden}
+details.item > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+  padding:10px 11px;font-size:13.5px}
+details.item > summary::-webkit-details-marker{display:none}
+details.item > summary .grip{color:var(--acc);font:var(--mono)}
+details.item > summary .ttl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--body)}
+details.item[open] > summary{border-bottom:1px solid var(--line);background:rgba(242,237,225,.03)}
+.itembody{padding:13px 12px 6px}
+.rowbtns{display:flex;gap:5px;flex:none}
+.rowbtns .btn{padding:3px 8px;font-size:12px;line-height:1.4}
+.rowbtns .del:hover{border-color:var(--bad);color:var(--bad)}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+
+.strrow{display:flex;gap:7px;margin-bottom:7px;align-items:center}
+.strrow input{flex:1}
+
+/* ---------- file fields ---------- */
+.file{border:1px solid var(--line);border-radius:5px;padding:11px;background:rgba(242,237,225,.02)}
+.filerow{display:flex;gap:12px;align-items:flex-start}
+.thumb{flex:none;width:108px;aspect-ratio:3/2;border-radius:3px;overflow:hidden;
+  border:1px dashed var(--line);background:#191712;display:flex;align-items:center;justify-content:center;
+  font:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);text-align:center;padding:6px}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.filecol{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;align-items:flex-start}
+.path{display:block;width:100%;font:var(--mono);letter-spacing:.04em;color:var(--dim);
+  word-break:break-all;line-height:1.5}
+.badge{display:inline-block;font:var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--acc);color:var(--acc);border-radius:999px;padding:3px 8px}
+.badge.on{background:var(--acc);color:var(--ink)}
+
+/* ---------- dialogs ---------- */
+/* body is a flex column, which drags an open dialog into the corner —
+   pin it back to the middle of the viewport */
+dialog{border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--cream);
+  max-width:min(620px,94vw);width:100%;padding:0;
+  position:fixed;inset:0;margin:auto;height:fit-content;max-height:92vh}
+dialog::backdrop{background:rgba(8,8,6,.74)}
+dialog .dhead{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}
+dialog .dhead h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:21px;flex:1}
+dialog .dbody{padding:18px;max-height:min(70vh,640px);overflow:auto}
+dialog .dfoot{display:flex;gap:9px;justify-content:flex-end;padding:13px 18px;border-top:1px solid var(--line);
+  flex-wrap:wrap}
+dialog h3{font-size:14px;margin:18px 0 8px;letter-spacing:.02em}
+dialog h3:first-child{margin-top:0}
+dialog p{color:var(--body);font-size:13.5px;line-height:1.65;margin-bottom:10px}
+dialog ol,dialog ul{color:var(--body);font-size:13.5px;line-height:1.7;padding-left:20px;margin-bottom:12px}
+dialog li{margin-bottom:3px}
+.warn{border:1px solid rgba(224,122,95,.45);background:rgba(224,122,95,.08);
+  border-radius:5px;padding:11px 13px;font-size:13px;line-height:1.6;color:var(--body);margin-bottom:14px}
+.steps{font:var(--mono);letter-spacing:.06em;line-height:1.9;color:var(--dim)}
+.steps div.on{color:var(--cream)}
+.steps div.done::before{content:'✓ ';color:var(--good)}
+.steps div.fail::before{content:'✗ ';color:var(--bad)}
+.steps div.on::before{content:'· '}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,24px);z-index:120;
+  background:var(--raise);border:1px solid var(--line);border-radius:7px;padding:13px 17px;
+  font-size:13.5px;line-height:1.5;max-width:min(520px,92vw);opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+#toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#toast.bad{border-color:rgba(224,122,95,.6)}
+#toast.good{border-color:rgba(127,176,105,.6)}
+
+#tabs{display:none}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  #split{display:none}
+  #prevpane{display:none}
+  body.show-prev #formpane{display:none}
+  body.show-prev #prevpane{display:flex}
+  #tabs{display:flex;gap:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================= passphrase gate ======================= -->
+<div id="gate">
+  <svg viewBox="-50 -50 100 100" aria-hidden="true">
+    <g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
+    <circle r="10" fill="#E9C846"/>
+  </svg>
+  <h1>Edit the site</h1>
+  <p id="gatemsg">Type the passphrase to carry on.</p>
+  <form id="gateform">
+    <input id="pass" type="password" autocomplete="current-password" placeholder="Passphrase" aria-label="Passphrase">
+    <button class="btn primary" type="submit">Open</button>
+  </form>
+  <div class="err" id="gateerr"></div>
+</div>
+
+<!-- ======================= app ======================= -->
+<header>
+  <span class="mark">
+    <svg viewBox="-50 -50 100 100" aria-hidden="true">
+      <g fill="#F2EDE1"><ellipse rx="13" ry="22" cy="-26"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(72)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(144)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(216)"/><ellipse rx="13" ry="22" cy="-26" transform="rotate(288)"/></g>
+      <circle r="10" fill="#E9C846"/>
+    </svg>
+    <b>Site editor</b>
+  </span>
+  <span id="tabs">
+    <button class="btn small" id="tabform">Edit</button>
+    <button class="btn small" id="tabprev">Preview</button>
+  </span>
+  <span class="spacer"></span>
+  <span id="status">Loading…</span>
+  <button class="btn small" id="reload" title="Fetch the words that are live on the site right now">Reload from site</button>
+  <button class="btn small" id="settings-open">Settings</button>
+  <button class="btn primary" id="publish" disabled>Publish</button>
+</header>
+
+<div class="shell">
+  <div class="pane" id="formpane"></div>
+  <div id="split" role="separator" aria-orientation="vertical" tabindex="0"
+       aria-label="Drag to resize the form and the preview"
+       title="Drag to resize · double-click to reset"></div>
+  <div class="pane" id="prevpane">
+    <div class="prevbar">
+      <span>Live preview — this is the real page</span>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn small" id="prevrefresh">Refresh</button>
+      <a class="btn small" id="openlive" href="index.html" target="_blank" rel="noopener">Open the real site</a>
+    </div>
+    <iframe id="frame" title="Preview of the site"></iframe>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ======================= settings ======================= -->
+<dialog id="settings">
+  <div class="dhead"><h2>Settings</h2><button class="btn small" id="settings-x">Close</button></div>
+  <div class="dbody">
+    <h3>Publishing to GitHub</h3>
+    <p>Publishing writes your changes straight into the repository that serves the
+       site. It needs a token — a long password GitHub gives you, which lets this
+       page save files on your behalf. You make it once.</p>
+    <label class="fld"><span class="lab">GitHub user or organisation</span><input type="text" id="cfg-owner"></label>
+    <label class="fld"><span class="lab">Repository</span><input type="text" id="cfg-repo"></label>
+    <label class="fld"><span class="lab">Branch</span><input type="text" id="cfg-branch"></label>
+    <label class="fld"><span class="lab">Token</span><input type="password" id="cfg-token" placeholder="github_pat_…" autocomplete="off"></label>
+    <div class="warn">The token is kept in this browser only — it is never sent anywhere
+      except to GitHub. Anyone who can use this browser profile can publish with it,
+      so don't save it on a shared or public computer. <strong>Forget token</strong>
+      removes it.</div>
+    <details>
+      <summary style="cursor:pointer;color:var(--acc);font-size:13.5px;margin-bottom:10px">How to make the token (2 minutes)</summary>
+      <ol>
+        <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a> while signed in to GitHub.</li>
+        <li><strong>Token name:</strong> anything, e.g. <code>site editor</code>.</li>
+        <li><strong>Expiration:</strong> pick a long one. When it expires, publishing stops working and you make a new one the same way.</li>
+        <li><strong>Repository access:</strong> choose <em>Only select repositories</em>, then pick the repository named above.</li>
+        <li><strong>Permissions → Repository permissions → Contents:</strong> set to <em>Read and write</em>. Leave everything else alone.</li>
+        <li>Press <strong>Generate token</strong>, copy the <code>github_pat_…</code> string, paste it into the Token box here, and press Save.</li>
+      </ol>
+    </details>
+
+    <h3>Passphrase for this page</h3>
+    <p>The passphrase only hides the editor from passers-by — it is not real security,
+       and it is not what protects the site. The token is. Change it here if you like.</p>
+    <label class="fld"><span class="lab">New passphrase</span><input type="text" id="cfg-pass" placeholder="leave blank to keep the current one"></label>
+    <p style="font-size:12.5px">Changing it saves a new editor.html to the repository, so it needs the token too.</p>
+
+    <h3>If you'd rather not publish from here</h3>
+    <p>Download the content file and the photos, then upload them to the repository
+       yourself (or send them on). Everything else in the editor works the same.</p>
+    <div class="addrow">
+      <button class="btn small" id="dl-content">Download content.js</button>
+      <button class="btn small" id="dl-files">Download new photos / audio</button>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn small" id="cfg-forget">Forget token</button>
+    <button class="btn small" id="lock">Lock the editor</button>
+    <button class="btn primary" id="cfg-save">Save</button>
+  </div>
+</dialog>
+
+<!-- ======================= publish progress ======================= -->
+<dialog id="pub">
+  <div class="dhead"><h2 id="pub-title">Publishing</h2></div>
+  <div class="dbody"><div class="steps" id="pub-steps"></div><div id="pub-extra"></div></div>
+  <div class="dfoot"><button class="btn primary" id="pub-x" disabled>Close</button></div>
+</dialog>
+
+<!-- content.js is the fallback source: used when the editor is opened from a
+     plain file:// path and fetch() cannot read it. -->
+<script src="content.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   Yasmin Eden Sound — site editor.
+
+   The whole site's words, photos and numbers live in content.js. This page
+   is a form over that file: it loads it, lets you change it with a live
+   preview of the real page beside you, and writes it back to GitHub, which
+   republishes the site on its own.
+
+   There is no server here. Everything runs in the browser you are holding.
+   ===================================================================== */
+
+const PASS_HASH = '6d1c5859550824d403d8c31af9ac673b7ba206e6f87e61e096a017299f74d63f'; /* ye-pass-hash */
+
+const CFG_DEFAULTS = {
+  owner: 'YasminEdenSound',
+  repo:  'YasminEdenSound.github.io',
+  branch:'main'
+};
+
+const DRAFT_KEY   = 'ye-editor-draft';   // resume point: the content, no file bytes
+const PREVIEW_KEY = 'ye-draft-content';  // what index.html?preview=1 reads
+const TOKEN_KEY   = 'ye-gh-token';
+const CFG_KEY     = 'ye-gh-cfg';
+const UNLOCK_KEY  = 'ye-editor-unlocked';
+
+const CONTENT_HEADER =
+`/* ===========================================================================
+   Yasmin Eden Sound — all of the site's words, photos and numbers.
+
+   This file is written by /editor.html. Everything after the \`=\` below is
+   plain JSON, so hand-editing works too — just keep the first line
+   (\`window.YE_CONTENT =\`) and the final \`;\` intact.
+   =========================================================================== */
+window.YE_CONTENT =
+`;
+
+/* ---------------------------------------------------------------- state */
+let draft    = null;   // what the form is editing
+let baseline = null;   // what is live, for the unsaved-changes check
+let dirty    = false;
+let busyNow  = false;
+const pending = new Map();  // repo path -> {b64, mime, dataUrl, size, from}
+
+/* ---------------------------------------------------------------- utils */
+const $ = id => document.getElementById(id);
+const clone = o => JSON.parse(JSON.stringify(o));
+const same  = (a,b) => JSON.stringify(a) === JSON.stringify(b);
+
+function el(tag, cls, text){
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function get(obj, path){
+  return path.split('.').reduce((o,k) => (o == null ? o : o[k]), obj);
+}
+function set(obj, path, v){
+  const ks = path.split('.');
+  let o = obj;
+  for (let i = 0; i < ks.length - 1; i++){
+    if (o[ks[i]] == null) o[ks[i]] = /^\d+$/.test(ks[i+1]) ? [] : {};
+    o = o[ks[i]];
+  }
+  o[ks[ks.length - 1]] = v;
+}
+const abs = (base, p) => base ? base + '.' + p : p;
+
+function toast(msg, kind){
+  const t = $('toast');
+  t.className = 'show' + (kind ? ' ' + kind : '');
+  t.textContent = '';
+  (Array.isArray(msg) ? msg : [msg]).forEach(m => {
+    if (typeof m === 'string') t.appendChild(document.createTextNode(m));
+    else t.appendChild(m);
+  });
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = ''; }, kind === 'bad' ? 11000 : 6500);
+}
+function status(text, cls){
+  const s = $('status');
+  s.textContent = text;
+  s.className = cls || '';
+}
+
+/* base64 helpers — btoa() only speaks latin1, so text has to be encoded to
+   UTF-8 bytes first or any — or · would corrupt on the way to GitHub. */
+function b64FromBytes(u8){
+  let s = '';
+  const CHUNK = 0x8000;                     // apply() dies on huge arrays
+  for (let i = 0; i < u8.length; i += CHUNK) s += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
+  return btoa(s);
+}
+const b64FromText = t => b64FromBytes(new TextEncoder().encode(t));
+function textFromB64(b){
+  const bin = atob(String(b).replace(/\s/g, ''));
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(u8);
+}
+
+/* ---------------------------------------------------------------- config */
+function cfg(){
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch(e){}
+  return Object.assign({}, CFG_DEFAULTS, saved, { token: localStorage.getItem(TOKEN_KEY) || '' });
+}
+function saveCfg(c){
+  localStorage.setItem(CFG_KEY, JSON.stringify({ owner:c.owner, repo:c.repo, branch:c.branch }));
+  if (c.token) localStorage.setItem(TOKEN_KEY, c.token);
+}
+
+/* ================================================================ GATE */
+async function sha256hex(s){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function openApp(){
+  $('gate').style.display = 'none';
+  try { sessionStorage.setItem(UNLOCK_KEY, '1'); } catch(e){}
+  boot();
+}
+(function gate(){
+  // crypto.subtle only exists in a secure context, so on a bare file:// path
+  // the check is impossible. Say so rather than pretending to be locked.
+  if (!window.crypto || !crypto.subtle){
+    $('gatemsg').textContent =
+      'The passphrase check needs https (or localhost). Opened from a plain file, ' +
+      'the editor still works — carry on.';
+    $('gateform').innerHTML = '<button class="btn primary" type="submit">Carry on</button>';
+    $('gateform').addEventListener('submit', e => { e.preventDefault(); openApp(); });
+    return;
+  }
+  if (sessionStorage.getItem(UNLOCK_KEY) === '1'){ openApp(); return; }
+  $('gateform').addEventListener('submit', async e => {
+    e.preventDefault();
+    const h = await sha256hex($('pass').value);
+    if (h === PASS_HASH) openApp();
+    else { $('gateerr').textContent = 'Not that one'; $('pass').select(); }
+  });
+  setTimeout(() => $('pass').focus(), 60);
+})();
+
+/* ============================================================ LOADING */
+function parseContentJs(text){
+  // content.js is `window.YE_CONTENT = { … };` — take the object and parse it
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  if (a < 0 || b < a) throw new Error('content.js does not look like it holds any content');
+  return JSON.parse(text.slice(a, b + 1));
+}
+function serialize(content){
+  return CONTENT_HEADER + JSON.stringify(content, null, 2) + '\n;\n';
+}
+
+async function loadFromSite(){
+  // cache-bust: GitHub Pages holds assets for ten minutes and we want the
+  // version that is live this second, not the one this browser remembers
+  const r = await fetch('content.js?t=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return parseContentJs(await r.text());
+}
+
+async function boot(){
+  status('Loading…', 'busy');
+  let live = null;
+  try {
+    live = await loadFromSite();
+  } catch(e){
+    if (window.YE_CONTENT){ live = clone(window.YE_CONTENT); }   // file:// fallback
+    else {
+      status('Could not load content.js', 'err');
+      toast('Could not read content.js — ' + e.message + '. The editor needs that file next to it.', 'bad');
+      return;
+    }
+  }
+  baseline = clone(live);
+  draft = clone(live);
+
+  // a draft left over from last time
+  let resumed = false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    if (saved && saved.content && !same(saved.content, live)){
+      const when = new Date(saved.at).toLocaleString();
+      if (confirm('You have unsaved changes from ' + when + '.\n\nOK — carry on with them.\nCancel — throw them away and start from what is live on the site.')){
+        draft = saved.content;
+        resumed = true;
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    }
+  } catch(e){}
+
+  // the draft has to be in localStorage before the frame starts loading,
+  // or the first preview renders the published copy instead
+  saveDraft();
+  $('frame').src = 'index.html?preview=1';
+  renderForm();
+  markDirty(!same(draft, baseline));
+  if (resumed) toast('Picked your draft back up. Photos you chose last time need choosing again — the files themselves were not kept.', 'good');
+  else status('Ready');
+}
+
+/* ============================================================ PREVIEW */
+let previewTimer = null;
+function schedulePreview(){
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(refreshPreview, 550);
+}
+function refreshPreview(){
+  clearTimeout(previewTimer);
+  saveDraft();
+  const f = $('frame');
+  // A full reload is deliberate. The page builds its instrument, its players
+  // and its photo fans once at startup, so patching nodes underneath them
+  // would leave the scroll animation pointing at elements that no longer
+  // exist. index.html?preview=1 puts the scroll position back afterwards.
+  try { f.contentWindow.location.reload(); }
+  catch(e){ f.src = 'index.html?preview=1'; }
+}
+function jogPreview(ctx){
+  if (!ctx) return;
+  const f = $('frame');
+  try { f.contentWindow.postMessage({ type:'ye-scroll', sel: ctx.sel, nth: ctx.nth }, '*'); } catch(e){}
+}
+
+/* The preview reads the draft out of localStorage. Photos that have been
+   chosen but not published yet exist only as bytes in this tab, so for the
+   preview their path is swapped for a data: URL. */
+function previewCopy(){
+  const out = clone(draft);
+  (function walk(n){
+    if (!n || typeof n !== 'object') return;
+    if (Array.isArray(n)) { n.forEach(walk); return; }
+    for (const k of Object.keys(n)){
+      if (k === 'file' && typeof n[k] === 'string'){
+        const p = pending.get(n[k]);
+        if (p && p.dataUrl) n[k] = p.dataUrl;
+      } else walk(n[k]);
+    }
+  })(out);
+  return out;
+}
+function saveDraft(){
+  if (!draft) return;
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ content: draft, at: Date.now() })); }
+  catch(e){ /* quota — the preview matters more than the resume point */ }
+  try {
+    localStorage.setItem(PREVIEW_KEY, JSON.stringify(previewCopy()));
+  } catch(e){
+    // data: URLs for several photos can blow the 5MB store. Fall back to the
+    // real paths: the page then shows those slots as empty frames, which is
+    // honest — that is what a visitor sees until you publish.
+    try { localStorage.setItem(PREVIEW_KEY, JSON.stringify(draft)); } catch(e2){}
+    toast('Too many new photos to show them all in the preview. They will be on the site once you publish.', 'bad');
+  }
+}
+function markDirty(v){
+  dirty = v;
+  $('publish').disabled = busyNow || (!dirty && pending.size === 0);
+  if (busyNow) return;
+  if (dirty || pending.size) status('Not published yet', 'dirty');
+  else status('Published', 'ok');
+}
+function touched(){
+  markDirty(true);
+  saveDraft();
+  schedulePreview();
+}
+
+/* ============================================================== SCHEMA */
+const CH_PREVIEW = i => ({ sel:'main > section.chapter', nth:i });
+
+const SCHEMA = [
+  { id:'basics', title:'Site basics', preview:{sel:'#topbar'},
+    note:'Your name, what the browser tab says, and whether Google is allowed to find the site yet.',
+    fields:[
+      { p:'meta.hideFromGoogle', type:'bool', label:'Keep the site hidden from Google',
+        hint:'This is the launch switch. Leave it ON while the page still has [square brackets] in it; turn it OFF when you want to be found. Publishing also updates robots.txt to match.' },
+      { p:'meta.title', type:'text', label:'Browser tab title' },
+      { p:'meta.description', type:'area', rows:2, label:'Search-result description',
+        hint:'The sentence Google shows under your name. Around 150 characters reads best.' },
+      { p:'brand.nav', type:'text', label:'Name in the top bar' },
+      { p:'brand.loaderName', type:'text', label:'Opening animation — big line' },
+      { p:'brand.loaderSub', type:'text', label:'Opening animation — small line' },
+      { p:'brand.loaderHint', type:'text', label:'Opening animation — tap-for-sound hint' },
+      { p:'footer.name', type:'text', label:'Name in the footer' },
+      { p:'footer.right', type:'text', label:'Footer, right-hand side', hint:'e.g. © 2026 · The Hague' }
+    ]},
+
+  { id:'menu', title:'Top menu', preview:{sel:'#topbar'},
+    fields:[
+      { p:'nav.links', type:'list', label:'Menu items', itemLabel:'Menu item',
+        title:(it,i) => it.label || ('Menu item ' + (i+1)),
+        newItem:() => ({ label:'New link', href:'#work' }),
+        fields:[
+          { p:'label', type:'text', label:'Text' },
+          { p:'href', type:'text', label:'Goes to',
+            hint:'#work, #about, #rates or #book jump down the page. A full https:// address opens elsewhere.' }
+        ]},
+      { p:'nav.cta.label', type:'text', label:'Button text' },
+      { p:'nav.cta.href', type:'text', label:'Button goes to' }
+    ]},
+
+  { id:'intro', title:'Opening screen', preview:{sel:'#intro'},
+    fields:[
+      { p:'intro.eyebrow', type:'text', label:'Small line above the headline' },
+      { p:'intro.heading', type:'area', rows:2, label:'Headline' },
+      { p:'intro.sub', type:'area', rows:3, label:'Paragraph under it' },
+      { p:'intro.cue', type:'text', label:'Scroll hint' }
+    ]},
+
+  { id:'story', title:'Your story', preview:CH_PREVIEW(0),
+    note:'Each chapter is one screenful as the visitor scrolls. Adding a chapter also adds a mark to the ruler on the right and another step to the instrument behind the text — you do not have to touch anything for that.',
+    fields:[
+      { p:'chapters', type:'list', label:'Chapters', itemLabel:'Chapter', preview:CH_PREVIEW,
+        title:(it,i) => it.kicker || it.heading || ('Chapter ' + (i+1)),
+        newItem:() => ({ kicker:'', heading:'', paragraphs:[{text:'',muted:false}], photos:[], caption:'', link:null }),
+        fields:[
+          { p:'kicker', type:'text', label:'Chapter label', hint:'e.g. 01 · The piano' },
+          { p:'heading', type:'area', rows:2, label:'Heading' },
+          { p:'paragraphs', type:'list', label:'Paragraphs', itemLabel:'Paragraph',
+            title:(it,i) => (it.text || 'Empty').slice(0,48),
+            newItem:() => ({ text:'', muted:false }),
+            fields:[
+              { p:'text', type:'area', rows:5, label:'Text' },
+              { p:'muted', type:'bool', label:'Grey this one out, as a note to yourself',
+                hint:'What the [bracketed] prompts use. Untick it — or delete the paragraph — once the real words are in.' }
+            ]},
+          { p:'photos', type:'list', label:'Photos', itemLabel:'Photo',
+            hint:'More than one and they stack into a fan the visitor can tap through.',
+            title:(it,i) => it.label || ('Photo ' + (i+1)),
+            newItem:() => ({ file:'', label:'', logo:false }),
+            fields:[
+              { p:'file', type:'img', label:'Photo', dir:'assets/journey/' },
+              { p:'label', type:'text', label:'What it shows',
+                hint:'Shown inside the empty frame until the photo loads, and read aloud by screen readers.' },
+              { p:'logo', type:'bool', label:'This is a logo, not a photograph',
+                hint:'Puts it on a cream plate and fits it whole instead of cropping it to the frame.' }
+            ]},
+          { p:'caption', type:'text', label:'Caption under the photos' },
+          { p:'link', type:'optional', label:'Link at the end of the chapter',
+            newItem:() => ({ label:'Hear the work ↓', href:'#work' }),
+            fields:[
+              { p:'label', type:'text', label:'Text' },
+              { p:'href', type:'text', label:'Goes to' }
+            ]}
+        ]}
+    ]},
+
+  { id:'work', title:'Selected work', preview:{sel:'#work'},
+    note:'Each card plays a real file from the site and the meter reads the actual audio. A card with no file shows "Unavailable" with its play button switched off, which is what visitors see until you add the mp3.',
+    fields:[
+      { p:'work.num', type:'text', label:'Section number' },
+      { p:'work.heading', type:'text', label:'Heading' },
+      { p:'work.lede', type:'area', rows:3, label:'Intro paragraph' },
+      { p:'work.tracks', type:'list', label:'Tracks', itemLabel:'Track',
+        title:(it,i) => it.title || ('Track ' + (i+1)),
+        newItem:() => ({ title:'', credit:'', file:'' }),
+        fields:[
+          { p:'title', type:'text', label:'Track title' },
+          { p:'credit', type:'text', label:'Credit line', hint:'e.g. Artist name · Mix & Master' },
+          { p:'file', type:'audio', label:'Audio', dir:'assets/' }
+        ]}
+    ]},
+
+  { id:'about', title:'At the desk', preview:{sel:'#about'},
+    fields:[
+      { p:'about.num', type:'text', label:'Section number' },
+      { p:'about.heading', type:'text', label:'Heading' },
+      { p:'about.body', type:'area', rows:4, label:'Paragraph' },
+      { p:'about.photo.file', type:'img', label:'Portrait', dir:'assets/' },
+      { p:'about.photo.alt', type:'text', label:'Describe the portrait',
+        hint:'For screen readers and for anyone whose photos have not loaded.' },
+      { p:'about.stats', type:'list', label:'The three facts', itemLabel:'Fact',
+        title:(it) => (it.label || 'Fact') + (it.value ? ' — ' + it.value : ''),
+        newItem:() => ({ label:'', value:'' }),
+        fields:[
+          { p:'label', type:'text', label:'Label' },
+          { p:'value', type:'text', label:'Value' }
+        ]}
+    ]},
+
+  { id:'rates', title:'Services & rates', preview:{sel:'#rates'},
+    fields:[
+      { p:'rates.num', type:'text', label:'Section number' },
+      { p:'rates.heading', type:'text', label:'Heading' },
+      { p:'rates.lede', type:'area', rows:3, label:'Intro paragraph' },
+      { p:'rates.cards', type:'list', label:'Service cards', itemLabel:'Service',
+        title:(it,i) => it.heading || ('Service ' + (i+1)),
+        newItem:() => ({ heading:'', fromLabel:'from', price:'', unit:'', bullets:[''], highlight:false }),
+        fields:[
+          { p:'heading', type:'text', label:'Service name' },
+          { p:'fromLabel', type:'text', label:'Small word before the price',
+            hint:'"from". Clear it if the price is fixed.' },
+          { p:'price', type:'text', label:'Price' },
+          { p:'unit', type:'text', label:'Per what', hint:'e.g. / song, / day' },
+          { p:'bullets', type:'strings', label:'What is included', itemLabel:'Line' },
+          { p:'highlight', type:'bool', label:'Draw attention to this card' }
+        ]}
+    ]},
+
+  { id:'book', title:'Book a session', preview:{sel:'#book'},
+    fields:[
+      { p:'book.num', type:'text', label:'Section number' },
+      { p:'book.heading', type:'text', label:'Heading' },
+      { p:'book.body', type:'area', rows:3, label:'Paragraph' },
+      { p:'book.contacts', type:'list', label:'Ways to reach you', itemLabel:'Contact',
+        title:(it) => (it.label || 'Contact') + (it.value ? ' — ' + it.value : ''),
+        newItem:() => ({ label:'', value:'', href:'' }),
+        fields:[
+          { p:'label', type:'text', label:'Label', hint:'Email, WhatsApp, Instagram…' },
+          { p:'value', type:'text', label:'What is shown' },
+          { p:'href', type:'text', label:'What it opens',
+            hint:'mailto:you@example.com · https://wa.me/31612345678 · https://instagram.com/yourhandle' }
+        ]},
+      { p:'book.form.endpoint', type:'text', label:'Where the contact form sends',
+        hint:'A Formspree address. While this still says YOUR_FORM_ID, anything a visitor types is lost — make a free form at formspree.io and paste its address here.' },
+      { p:'book.form.nameLabel', type:'text', label:'Form — name field label' },
+      { p:'book.form.emailLabel', type:'text', label:'Form — email field label' },
+      { p:'book.form.messageLabel', type:'text', label:'Form — message field label' },
+      { p:'book.form.submitLabel', type:'text', label:'Form — button text' }
+    ]}
+];
+
+/* ============================================================ RENDERING */
+function renderForm(){
+  const pane = $('formpane');
+  // keep the user's place: which sections were open, and the scroll offset
+  const open = new Set([...pane.querySelectorAll('details[data-key]')]
+    .filter(d => d.open).map(d => d.dataset.key));
+  const top = pane.scrollTop;
+  const firstRun = !pane.dataset.rendered;
+
+  pane.textContent = '';
+  SCHEMA.forEach(sec => {
+    const d = el('details', 'sec');
+    d.dataset.key = 'sec:' + sec.id;
+    d.open = firstRun ? sec.id === 'basics' : open.has(d.dataset.key);
+    const sum = el('summary');
+    sum.appendChild(el('span', null, sec.title));
+    d.appendChild(sum);
+    sum.addEventListener('click', () => { if (!d.open) jogPreview(sec.preview); });
+
+    const body = el('div', 'secbody');
+    if (sec.note) body.appendChild(el('p', 'note', sec.note));
+    sec.fields.forEach(f => body.appendChild(field('', f, sec.preview, open)));
+    d.appendChild(body);
+    pane.appendChild(d);
+  });
+
+  pane.dataset.rendered = '1';
+  pane.scrollTop = top;
+}
+
+function field(base, f, ctx, open){
+  const path = abs(base, f.p);
+  switch (f.type){
+    case 'bool':     return boolField(path, f, ctx);
+    case 'area':     return textField(path, f, ctx, true);
+    case 'img':
+    case 'audio':    return fileField(path, f, ctx);
+    case 'list':     return listField(path, f, ctx, open);
+    case 'strings':  return stringsField(path, f, ctx);
+    case 'optional': return optionalField(path, f, ctx, open);
+    default:         return textField(path, f, ctx, false);
+  }
+}
+
+function grow(t){
+  t.style.height = 'auto';
+  t.style.height = Math.min(420, t.scrollHeight + 2) + 'px';
+}
+
+function textField(path, f, ctx, multi){
+  const wrap = el('label', 'fld');
+  wrap.appendChild(el('span', 'lab', f.label));
+  const input = document.createElement(multi ? 'textarea' : 'input');
+  if (multi) input.rows = f.rows || 3; else input.type = 'text';
+  input.value = get(draft, path) ?? '';
+  input.addEventListener('input', () => {
+    set(draft, path, input.value);
+    if (multi) grow(input);
+    retitle(input);
+    touched();
+  });
+  input.addEventListener('focus', () => jogPreview(ctx));
+  wrap.appendChild(input);
+  if (f.hint) wrap.appendChild(el('span', 'hint', f.hint));
+  if (multi) requestAnimationFrame(() => grow(input));
+  return wrap;
+}
+
+function boolField(path, f, ctx){
+  const wrap = el('label', 'sw');
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = !!get(draft, path);
+  cb.addEventListener('change', () => { set(draft, path, cb.checked); jogPreview(ctx); touched(); });
+  const txt = el('span', 'txt');
+  txt.appendChild(document.createTextNode(f.label));
+  if (f.hint) txt.appendChild(el('small', null, f.hint));
+  wrap.appendChild(cb);
+  wrap.appendChild(txt);
+  return wrap;
+}
+
+/* the summary of a collapsed item should follow what you type inside it */
+function retitle(node){
+  const item = node.closest('details.item');
+  if (!item || !item._title) return;
+  item.querySelector('.ttl').textContent = item._title();
+}
+
+function listField(path, f, ctx, open){
+  const arr = get(draft, path);
+  if (!Array.isArray(arr)) set(draft, path, []);
+  const list = get(draft, path);
+
+  const box = el('div', 'list');
+  if (f.label) box.appendChild(el('span', 'lab', f.label));
+  if (f.hint) box.appendChild(el('span', 'hint', f.hint));
+
+  list.forEach((item, i) => {
+    const itemCtx = f.preview ? f.preview(i) : ctx;
+    const d = el('details', 'item');
+    d.dataset.key = path + '.' + i;
+    d.open = open ? open.has(d.dataset.key) : false;
+    d._title = () => String((f.title ? f.title(get(draft, path)[i] ?? {}, i) : (f.itemLabel + ' ' + (i+1))) || '').trim() || (f.itemLabel + ' ' + (i+1));
+
+    const sum = el('summary');
+    sum.appendChild(el('span', 'grip', String(i + 1).padStart(2, '0')));
+    sum.appendChild(el('span', 'ttl', d._title()));
+    const btns = el('div', 'rowbtns');
+    btns.appendChild(moveBtn(path, i, -1, '↑', i === 0));
+    btns.appendChild(moveBtn(path, i, +1, '↓', i === list.length - 1));
+    const del = el('button', 'btn del', '✕');
+    del.title = 'Delete this ' + f.itemLabel.toLowerCase();
+    del.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (!confirm('Delete this ' + f.itemLabel.toLowerCase() + '? It cannot be undone from here.')) return;
+      get(draft, path).splice(i, 1);
+      touched(); renderForm();
+    });
+    btns.appendChild(del);
+    sum.appendChild(btns);
+    sum.addEventListener('click', () => { if (!d.open) jogPreview(itemCtx); });
+    d.appendChild(sum);
+
+    const body = el('div', 'itembody');
+    f.fields.forEach(sub => body.appendChild(field(path + '.' + i, sub, itemCtx, open)));
+    d.appendChild(body);
+    box.appendChild(d);
+  });
+
+  const addRow = el('div', 'addrow');
+  const add = el('button', 'btn small', '+ Add ' + f.itemLabel.toLowerCase());
+  add.addEventListener('click', e => {
+    e.preventDefault();
+    get(draft, path).push(f.newItem());
+    touched(); renderForm();
+    // open the one just added
+    const d = $('formpane').querySelector('[data-key="' + path + '.' + (get(draft, path).length - 1) + '"]');
+    if (d){ d.open = true; d.scrollIntoView({block:'center', behavior:'smooth'}); }
+  });
+  addRow.appendChild(add);
+  box.appendChild(addRow);
+  return box;
+}
+
+function moveBtn(path, i, dir, glyph, disabled){
+  const b = el('button', 'btn', glyph);
+  b.title = dir < 0 ? 'Move up' : 'Move down';
+  b.disabled = disabled;
+  b.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    const arr = get(draft, path);
+    const j = i + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    touched(); renderForm();
+  });
+  return b;
+}
+
+/* a list of plain strings — the bullet lines on a rate card */
+function stringsField(path, f, ctx){
+  const arr = get(draft, path);
+  if (!Array.isArray(arr)) set(draft, path, []);
+  const list = get(draft, path);
+
+  const box = el('div', 'list');
+  if (f.label) box.appendChild(el('span', 'lab', f.label));
+  list.forEach((s, i) => {
+    const row = el('div', 'strrow');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = s ?? '';
+    input.addEventListener('input', () => { get(draft, path)[i] = input.value; touched(); });
+    input.addEventListener('focus', () => jogPreview(ctx));
+    row.appendChild(input);
+    const btns = el('div', 'rowbtns');
+    btns.appendChild(moveBtn(path, i, -1, '↑', i === 0));
+    btns.appendChild(moveBtn(path, i, +1, '↓', i === list.length - 1));
+    const del = el('button', 'btn del', '✕');
+    del.addEventListener('click', e => {
+      e.preventDefault();
+      get(draft, path).splice(i, 1);
+      touched(); renderForm();
+    });
+    btns.appendChild(del);
+    row.appendChild(btns);
+    box.appendChild(row);
+  });
+  const add = el('button', 'btn small', '+ Add ' + (f.itemLabel || 'line').toLowerCase());
+  add.addEventListener('click', e => { e.preventDefault(); get(draft, path).push(''); touched(); renderForm(); });
+  box.appendChild(add);
+  return box;
+}
+
+/* a block that may simply not be there — the "Hear the work ↓" link */
+function optionalField(path, f, ctx, open){
+  const box = el('div', 'list');
+  const has = !!get(draft, path);
+  const sw = el('label', 'sw');
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = has;
+  cb.addEventListener('change', () => {
+    set(draft, path, cb.checked ? f.newItem() : null);
+    touched(); renderForm();
+  });
+  sw.appendChild(cb);
+  sw.appendChild(el('span', 'txt', f.label));
+  box.appendChild(sw);
+  if (has){
+    const inner = el('div');
+    inner.style.paddingLeft = '51px';
+    f.fields.forEach(sub => inner.appendChild(field(path, sub, ctx, open)));
+    box.appendChild(inner);
+  }
+  return box;
+}
+
+/* ------------------------------------------------------- file fields */
+const MAX_EDGE = 1800;     // the frames are 3:2 at ~600px wide; 1800 covers retina
+const SHRINK_OVER = 900 * 1024;
+
+function readDataUrl(blob){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(new Error('could not read the file'));
+    fr.readAsDataURL(blob);
+  });
+}
+
+/* Phone photos arrive at 4000px and several megabytes. The page never shows
+   one bigger than about 600px wide, so sending the original would cost her
+   visitors a slow page for nothing. Anything oversized is redrawn through a
+   canvas; anything already sensible is passed through untouched. */
+function shrink(file){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+      if (scale === 1 && file.size <= SHRINK_OVER){
+        readDataUrl(file).then(d => res({ blob:file, dataUrl:d, note:null }), rej);
+        return;
+      }
+      const cw = Math.round(w * scale), ch = Math.round(h * scale);
+      const cv = document.createElement('canvas');
+      cv.width = cw; cv.height = ch;
+      const x = cv.getContext('2d');
+      const keepAlpha = /png/i.test(file.type);
+      if (!keepAlpha){ x.fillStyle = '#191712'; x.fillRect(0, 0, cw, ch); }  // jpeg has no transparency
+      x.drawImage(img, 0, 0, cw, ch);
+      cv.toBlob(b => {
+        if (!b){ rej(new Error('could not re-save that image')); return; }
+        readDataUrl(b).then(d => res({
+          blob: b, dataUrl: d,
+          note: w + '×' + h + ' → ' + cw + '×' + ch
+        }), rej);
+      }, keepAlpha ? 'image/png' : 'image/jpeg', 0.84);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('that does not look like an image')); };
+    img.src = url;
+  });
+}
+
+/* Every upload gets a filename of its own instead of overwriting the old one.
+   GitHub Pages caches by URL for ten minutes, so reusing a path means the old
+   photo keeps showing up long after it was replaced. */
+function uniqueName(name){
+  const m = /\.([a-z0-9]+)$/i.exec(name);
+  const ext = m ? '.' + m[1].toLowerCase() : '';
+  const base = name.replace(/\.[^.]+$/, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'file';
+  return base + '-' + Date.now().toString(36) + ext;
+}
+
+async function attach(path, f, file){
+  try {
+    let blob = file, dataUrl = null, note = null, name = file.name;
+    const isSvg = /svg/i.test(file.type) || /\.svg$/i.test(file.name);
+
+    if (f.type === 'img' && !isSvg){
+      const out = await shrink(file);
+      blob = out.blob; dataUrl = out.dataUrl; note = out.note;
+      if (blob !== file) name = name.replace(/\.[^.]+$/, '') + (/png/i.test(blob.type) ? '.png' : '.jpg');
+    } else if (f.type === 'img'){
+      dataUrl = await readDataUrl(file);
+    }
+
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    if (bytes.length > 40 * 1024 * 1024) throw new Error('that file is over 40MB — too big to publish this way');
+
+    const repoPath = (f.dir || 'assets/') + uniqueName(name);
+    pending.set(repoPath, {
+      b64: b64FromBytes(bytes), mime: blob.type || 'application/octet-stream',
+      dataUrl, size: bytes.length, from: file.name
+    });
+    set(draft, path, repoPath);
+    touched();
+    renderForm();
+    toast('Added ' + file.name + (note ? ' (resized ' + note + ')' : '') +
+          ' — ' + Math.round(bytes.length / 1024) + 'KB. It uploads when you press Publish.', 'good');
+  } catch(e){
+    toast('Could not use that file: ' + e.message, 'bad');
+  }
+}
+
+function fileField(path, f, ctx){
+  const box = el('div', 'fld file');
+  box.appendChild(el('span', 'lab', f.label));
+  const cur = get(draft, path) || '';
+  const isNew = pending.has(cur);
+  const row = el('div', 'filerow');
+
+  if (f.type === 'img'){
+    const thumb = el('div', 'thumb');
+    const src = isNew ? pending.get(cur).dataUrl : cur;
+    if (src){
+      const im = document.createElement('img');
+      im.alt = '';
+      im.addEventListener('error', () => { thumb.textContent = 'not on the site yet'; });
+      im.src = src;
+      thumb.appendChild(im);
+    } else thumb.textContent = 'no photo';
+    row.appendChild(thumb);
+  }
+
+  const col = el('div', 'filecol');
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.accept = f.type === 'img' ? 'image/*' : 'audio/*';
+  picker.hidden = true;
+  picker.addEventListener('change', () => {
+    const file = picker.files && picker.files[0];
+    if (file) attach(path, f, file);
+  });
+  const pick = el('button', 'btn small', f.type === 'img' ? 'Choose a photo…' : 'Choose an audio file…');
+  pick.addEventListener('click', e => { e.preventDefault(); picker.click(); });
+  col.appendChild(pick);
+  col.appendChild(picker);
+
+  if (isNew){
+    const p = pending.get(cur);
+    const b = el('span', 'badge on', 'new · ' + Math.round(p.size / 1024) + 'KB · uploads on publish');
+    col.appendChild(b);
+  }
+  col.appendChild(el('code', 'path', cur || '— nothing chosen —'));
+  if (cur){
+    const clear = el('button', 'btn small', 'Remove');
+    clear.addEventListener('click', e => {
+      e.preventDefault();
+      pending.delete(cur);
+      set(draft, path, '');
+      touched(); renderForm();
+    });
+    col.appendChild(clear);
+  }
+  if (f.hint) col.appendChild(el('span', 'hint', f.hint));
+  row.appendChild(col);
+  box.appendChild(row);
+  return box;
+}
+
+/* ============================================================== GITHUB */
+function ghPath(p){ return p.split('/').map(encodeURIComponent).join('/'); }
+
+async function gh(sub, opts){
+  const c = cfg();
+  if (!c.token) throw new Error('No GitHub token saved — open Settings and add one.');
+  const r = await fetch('https://api.github.com/repos/' + c.owner + '/' + c.repo + sub, Object.assign({}, opts, {
+    headers: Object.assign({
+      'Authorization': 'Bearer ' + c.token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }, (opts && opts.headers) || {})
+  }));
+  return r;
+}
+
+async function ghGet(path){
+  const c = cfg();
+  const r = await gh('/contents/' + ghPath(path) + '?ref=' + encodeURIComponent(c.branch), { cache:'no-store' });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(await ghMessage(r, 'reading ' + path));
+  const j = await r.json();
+  return { sha: j.sha, b64: j.content || '', size: j.size };
+}
+
+async function ghPut(path, b64, message, sha){
+  const c = cfg();
+  const body = { message, content: b64, branch: c.branch };
+  if (sha) body.sha = sha;
+  const r = await gh('/contents/' + ghPath(path), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await ghMessage(r, 'saving ' + path));
+  return r.json();
+}
+
+async function ghMessage(r, what){
+  let detail = '';
+  try { const j = await r.json(); detail = j.message || ''; } catch(e){}
+  if (r.status === 401) return 'GitHub refused the token (401). It may be wrong, or expired — make a new one in Settings.';
+  if (r.status === 403) return 'GitHub says this token is not allowed to do that (403). Check it has Contents: Read and write on this repository.';
+  if (r.status === 404) return 'GitHub could not find ' + cfg().owner + '/' + cfg().repo + ' on branch ' + cfg().branch +
+                              ' (404). Check the three boxes in Settings, and that the token covers this repository.';
+  if (r.status === 409) return 'The site changed since this editor loaded it (409). Press "Reload from site", redo the change, and publish again.';
+  if (r.status === 422) return 'GitHub rejected the file (422): ' + detail;
+  return 'GitHub error ' + r.status + ' while ' + what + (detail ? ': ' + detail : '');
+}
+
+/* write only when the text actually differs, so a no-op publish does not
+   litter the history with empty commits */
+async function ghPutText(path, text, message){
+  const cur = await ghGet(path);
+  if (cur && cur.b64 && textFromB64(cur.b64) === text) return 'unchanged';
+  await ghPut(path, b64FromText(text), message, cur ? cur.sha : null);
+  return 'written';
+}
+
+/* ============================================================= PUBLISH */
+const ROBOTS_HIDDEN = 'User-agent: *\nDisallow: /\n';
+const ROBOTS_LIVE   = 'User-agent: *\nAllow: /\n';
+const HIDE_LINE = '<meta name="robots" content="noindex, nofollow"><!-- ye-robots -->';
+const LIVE_LINE = '<!-- ye-robots: site is live and findable -->';
+const ROBOTS_RE = /<meta name="robots"[^>]*><!-- ye-robots -->|<!-- ye-robots: site is live and findable -->/;
+
+function stepLine(text){
+  const d = el('div', 'on', text);
+  $('pub-steps').appendChild(d);
+  return {
+    done: () => { d.className = 'done'; },
+    fail: () => { d.className = 'fail'; }
+  };
+}
+
+async function publish(){
+  if (!cfg().token){ openSettings(); toast('Add a GitHub token in Settings first — the instructions are in there.', 'bad'); return; }
+
+  busyNow = true;
+  $('publish').disabled = true;
+  status('Publishing…', 'busy');
+  $('pub-steps').textContent = '';
+  $('pub-extra').textContent = '';
+  $('pub-title').textContent = 'Publishing';
+  $('pub-x').disabled = true;
+  $('pub').showModal();
+
+  let step = null;
+  try {
+    // 1. the files she picked, each to a path of its own
+    for (const [path, file] of pending){
+      step = stepLine('Uploading ' + path + ' (' + Math.round(file.size / 1024) + 'KB)');
+      const existing = await ghGet(path);
+      await ghPut(path, file.b64, 'Add ' + path, existing ? existing.sha : null);
+      step.done();
+    }
+
+    // 2. the words
+    step = stepLine('Saving the words (content.js)');
+    const r1 = await ghPutText('content.js', serialize(draft), 'Update site content');
+    step.done();
+
+    // 3. the launch switch — robots.txt and the one line in index.html.
+    //    Done server-side as well as in the page, because a crawler should
+    //    not have to run JavaScript to learn it is allowed in.
+    const hide = !!(draft.meta && draft.meta.hideFromGoogle);
+    step = stepLine('Checking the Google setting (' + (hide ? 'hidden' : 'findable') + ')');
+    await ghPutText('robots.txt', hide ? ROBOTS_HIDDEN : ROBOTS_LIVE,
+                    hide ? 'Keep the site out of search engines' : 'Open the site to search engines');
+    const idx = await ghGet('index.html');
+    if (idx){
+      const text = textFromB64(idx.b64);
+      if (ROBOTS_RE.test(text)){
+        const next = text.replace(ROBOTS_RE, hide ? HIDE_LINE : LIVE_LINE);
+        if (next !== text) await ghPut('index.html', b64FromText(next), hide ? 'Hide from search engines' : 'Allow search engines', idx.sha);
+      } else {
+        $('pub-extra').appendChild(el('div', 'warn',
+          'The Google switch could not be applied to index.html — its marker line is missing. Everything else published fine.'));
+      }
+    }
+    step.done();
+
+    pending.clear();
+    baseline = clone(draft);
+    try { localStorage.removeItem(DRAFT_KEY); } catch(e){}
+
+    $('pub-title').textContent = 'Published';
+    const extra = el('p', null, r1 === 'unchanged'
+      ? 'The words were already up to date. Any files were uploaded.'
+      : 'GitHub is rebuilding the site now — give it up to a minute, then reload the page. ');
+    const a = el('a', null, 'Open the site');
+    a.href = 'index.html'; a.target = '_blank'; a.rel = 'noopener';
+    extra.appendChild(a);
+    $('pub-extra').appendChild(extra);
+    busyNow = false;
+    markDirty(false);
+    renderForm();
+    refreshPreview();
+  } catch(e){
+    if (step) step.fail();
+    $('pub-title').textContent = 'Stopped';
+    $('pub-extra').appendChild(el('div', 'warn', e.message));
+    busyNow = false;
+    markDirty(true);
+    status('Publish failed', 'err');
+  }
+  $('pub-x').disabled = false;
+}
+
+/* ============================================================= EXPORTS */
+function download(name, blob){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function downloadContent(){
+  download('content.js', new Blob([serialize(draft)], { type:'text/javascript' }));
+  toast('Saved content.js. It belongs in the top folder of the repository, replacing the one there.', 'good');
+}
+function downloadFiles(){
+  if (!pending.size){ toast('No new photos or audio to save.'); return; }
+  let i = 0;
+  for (const [path, f] of pending){
+    const bin = atob(f.b64);
+    const u8 = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k);
+    setTimeout(() => download(path.split('/').pop(), new Blob([u8], { type:f.mime })), i * 350);
+    i++;
+  }
+  toast('Saving ' + pending.size + ' file(s). Each one belongs in the folder its path names — look under the Choose button for that path.', 'good');
+}
+
+/* ====================================================== PASSPHRASE SWAP */
+async function changePassphrase(next){
+  const h = await sha256hex(next);
+  const cur = await ghGet('editor.html');
+  if (!cur) throw new Error('editor.html is not in the repository yet, so there is nothing to change.');
+  const text = textFromB64(cur.b64);
+  const re = /const PASS_HASH = '[0-9a-f]*'; \/\* ye-pass-hash \*\//;
+  if (!re.test(text)) throw new Error('could not find the passphrase line in editor.html');
+  const nextText = text.replace(re, "const PASS_HASH = '" + h + "'; /* ye-pass-hash */");
+  await ghPut('editor.html', b64FromText(nextText), 'Change editor passphrase', cur.sha);
+}
+
+/* ========================================================== THE SPLIT ====
+   How much of the screen is form and how much is page. Kept as a fraction
+   rather than a pixel width so it survives a resize or a different monitor,
+   and remembered between visits. */
+const SPLIT_KEY = 'ye-split';
+const SPLIT_DEFAULT = 0.46;
+const MIN_FORM = 340, MIN_PREVIEW = 380;
+
+(function splitter(){
+  const bar = $('split');
+  const shell = document.querySelector('.shell');
+
+  function applyFraction(f){
+    const w = shell.clientWidth, gap = bar.offsetWidth || 7;
+    // never let either side collapse to a sliver, but on a narrow window the
+    // minimums can't both be met — the form wins, since that is what she types in
+    const max = Math.max(MIN_FORM, w - MIN_PREVIEW - gap);
+    const px = Math.min(Math.max(f * w, MIN_FORM), max);
+    shell.style.setProperty('--split', px + 'px');
+    bar.setAttribute('aria-valuenow', String(Math.round(px / w * 100)));
+    return px / w;
+  }
+  let fraction = parseFloat(localStorage.getItem(SPLIT_KEY) || '');
+  if (!(fraction > 0.05 && fraction < 0.95)) fraction = SPLIT_DEFAULT;
+  applyFraction(fraction);
+
+  const save = () => { try { localStorage.setItem(SPLIT_KEY, String(fraction)); } catch(e){} };
+  const fromX = x => {
+    fraction = applyFraction((x - shell.getBoundingClientRect().left) / shell.clientWidth);
+  };
+
+  /* Reset is handled here rather than with a dblclick listener: the
+     preventDefault below — which is what stops a drag from selecting text —
+     also suppresses the compatibility mouse events, and dblclick is one of
+     them. So count the presses ourselves. */
+  let lastDown = 0;
+
+  bar.addEventListener('pointerdown', e => {
+    if (innerWidth <= 900) return;
+    e.preventDefault();
+    if (e.timeStamp - lastDown < 400){
+      lastDown = 0;
+      fraction = applyFraction(SPLIT_DEFAULT);
+      save();
+      return;
+    }
+    lastDown = e.timeStamp;
+    bar.setPointerCapture(e.pointerId);          // keeps the pointer ours over the iframe
+    document.body.classList.add('dragging');
+    const move = ev => {
+      // a press that moved was a drag, not half a double-click — otherwise
+      // grabbing the handle twice in quick succession snaps it back to 46%
+      lastDown = 0;
+      fromX(ev.clientX);
+    };
+    const up = () => {
+      bar.releasePointerCapture(e.pointerId);
+      document.body.classList.remove('dragging');
+      bar.removeEventListener('pointermove', move);
+      bar.removeEventListener('pointerup', up);
+      bar.removeEventListener('pointercancel', up);
+      save();
+    };
+    bar.addEventListener('pointermove', move);
+    bar.addEventListener('pointerup', up);
+    bar.addEventListener('pointercancel', up);
+  });
+
+  bar.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 0.10 : 0.02;
+    let f = null;
+    if (e.key === 'ArrowLeft')  f = fraction - step;
+    else if (e.key === 'ArrowRight') f = fraction + step;
+    else if (e.key === 'Home')  f = 0.25;
+    else if (e.key === 'End')   f = 0.75;
+    else if (e.key === 'Enter' || e.key === ' ') f = SPLIT_DEFAULT;
+    if (f === null) return;
+    e.preventDefault();
+    fraction = applyFraction(f);
+    save();
+  });
+
+  addEventListener('resize', () => applyFraction(fraction));
+})();
+
+/* ================================================================ WIRING */
+function openSettings(){
+  const c = cfg();
+  $('cfg-owner').value = c.owner;
+  $('cfg-repo').value = c.repo;
+  $('cfg-branch').value = c.branch;
+  $('cfg-token').value = c.token;
+  $('cfg-pass').value = '';
+  $('settings').showModal();
+}
+$('settings-open').addEventListener('click', openSettings);
+$('settings-x').addEventListener('click', () => $('settings').close());
+$('cfg-save').addEventListener('click', async () => {
+  saveCfg({
+    owner: $('cfg-owner').value.trim(),
+    repo:  $('cfg-repo').value.trim(),
+    branch:$('cfg-branch').value.trim() || 'main',
+    token: $('cfg-token').value.trim()
+  });
+  const next = $('cfg-pass').value.trim();
+  if (next){
+    try {
+      await changePassphrase(next);
+      toast('Passphrase changed. The new one works as soon as GitHub finishes rebuilding — a minute or so.', 'good');
+    } catch(e){ toast('Could not change the passphrase: ' + e.message, 'bad'); }
+  } else {
+    toast('Settings saved.', 'good');
+  }
+  $('settings').close();
+});
+$('cfg-forget').addEventListener('click', () => {
+  localStorage.removeItem(TOKEN_KEY);
+  $('cfg-token').value = '';
+  toast('Token removed from this browser. Publishing will ask for it again.', 'good');
+});
+$('lock').addEventListener('click', () => {
+  try { sessionStorage.removeItem(UNLOCK_KEY); } catch(e){}
+  location.reload();
+});
+$('dl-content').addEventListener('click', downloadContent);
+$('dl-files').addEventListener('click', downloadFiles);
+$('pub-x').addEventListener('click', () => $('pub').close());
+$('publish').addEventListener('click', publish);
+$('prevrefresh').addEventListener('click', refreshPreview);
+$('reload').addEventListener('click', async () => {
+  if ((dirty || pending.size) && !confirm('This throws away the changes you have not published yet. Carry on?')) return;
+  pending.clear();
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e){}
+  boot();
+});
+$('tabform').addEventListener('click', () => document.body.classList.remove('show-prev'));
+$('tabprev').addEventListener('click', () => { document.body.classList.add('show-prev'); refreshPreview(); });
+
+addEventListener('beforeunload', e => {
+  if (dirty || pending.size){ e.preventDefault(); e.returnValue = ''; }
+});
+})();
+</script>
+</body>
+</html>
