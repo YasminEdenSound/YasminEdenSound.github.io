@@ -1789,10 +1789,24 @@ function startAudio(){
   paintSound();
 }
 
+/* Any gesture arms the audio — EXCEPT one aimed at the pill, which runs its
+   own logic below. Letting this fire for the pill too is what broke it: the
+   pointerdown started the context, and the click that followed then read it
+   as already running and switched it straight back off. */
 ['pointerdown', 'touchstart', 'keydown'].forEach(ev =>
-  addEventListener(ev, () => { if (soundOn) startAudio(); }, {passive: true}));
+  addEventListener(ev, e => {
+    if (e.target && e.target.closest && e.target.closest('#snd')) return;
+    if (soundOn) startAudio();
+  }, {passive: true}));
 
 sndBtn.addEventListener('click', () => {
+  const live = soundOn && actx && actx.state === 'running';
+  /* Armed: sound is switched on and the pill is literally asking to be
+     tapped, but the browser has not released the context yet. A tap here
+     has to START it. Toggling instead meant the very first tap silenced
+     the site AND remembered that in localStorage, so it stayed silent on
+     every later visit — the pill read "Sound off" and nobody knew why. */
+  if (soundOn && !live){ startAudio(); return; }
   soundOn = !soundOn;
   localStorage.setItem('ye-sound', soundOn ? '1' : '0');
   if (soundOn) startAudio();
