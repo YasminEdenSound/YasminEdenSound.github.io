@@ -8,7 +8,7 @@
 window.YE_CONTENT =
 {
   "meta": {
-    "title": "Yasmin Eden Sound — mixing, mastering, recordingd",
+    "title": "Yasmin Eden Sound — mixing, mastering, recordings",
     "description": "I'm Yasmin Eden — an independent engineer mixing, mastering and recording for bands and solo artists. Send me your demos.",
     "hideFromGoogle": true
   },
