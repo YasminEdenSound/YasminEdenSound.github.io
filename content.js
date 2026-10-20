@@ -1,18 +1,14 @@
 /* ===========================================================================
    Yasmin Eden Sound — all of the site's words, photos and numbers.
 
-   This is the ONLY file you need to change to edit the site. Open
-   /editor.html in a browser and it will write this file for you — you should
-   never have to look in here.
-
-   If you do want to hand-edit: everything after the `=` below is plain JSON.
-   Keep the first line (`window.YE_CONTENT =`) and the final `;` intact, and
-   keep the quotes and commas where they are.
+   This file is written by /editor.html. Everything after the `=` below is
+   plain JSON, so hand-editing works too — just keep the first line
+   (`window.YE_CONTENT =`) and the final `;` intact.
    =========================================================================== */
 window.YE_CONTENT =
 {
   "meta": {
-    "title": "Yasmin Eden Sound — mixing, mastering, recording",
+    "title": "Yasmin Eden Sound — mixing, mastering, recordingd",
     "description": "I'm Yasmin Eden — an independent engineer mixing, mastering and recording for bands and solo artists. Send me your demos.",
     "hideFromGoogle": true
   },
