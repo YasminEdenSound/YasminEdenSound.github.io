@@ -8,8 +8,8 @@
 window.YE_CONTENT =
 {
   "meta": {
-    "title": "Yasmin Eden Sound — mixing, mastering, recordings",
-    "description": "I'm Yasmin Eden — an independent engineer mixing, mastering and recording for bands and solo artists. Send me your demos.",
+    "title": "Yasmin Eden Sound — producing, mixing, educating",
+    "description": "I'm Yasmin Eden — an independent  sound engineer and educator, producing and mixing for bands and solo artists. Send me your demos.",
     "hideFromGoogle": true
   },
   "brand": {
@@ -39,8 +39,8 @@ window.YE_CONTENT =
     }
   },
   "intro": {
-    "eyebrow": "Mixing · Mastering · Recording",
-    "heading": "I've been making this record my whole life.",
+    "eyebrow": "Producing · Mixing · Educating",
+    "heading": "",
     "sub": "I'm Yasmin — an independent engineer working with bands and solo artists. Scroll to play it: every line below is a part I learned to hear.",
     "cue": "Scroll ↓"
   },
@@ -288,7 +288,7 @@ window.YE_CONTENT =
   },
   "footer": {
     "name": "Yasmin Eden Sound",
-    "right": "© [Year] · [City]"
+    "right": "© 2026 · The Hague"
   },
   "theme": {
     "light": {
