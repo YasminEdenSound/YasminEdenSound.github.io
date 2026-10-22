@@ -41,7 +41,7 @@ window.YE_CONTENT =
   "intro": {
     "eyebrow": "Producing · Mixing · Educating",
     "heading": "",
-    "sub": "I'm Yasmin — an independent engineer working with bands and solo artists. Scroll to play it: every line below is a part I learned to hear.",
+    "sub": "I'm Yasmin — an independent producer, sound engineer and teacher working with bands and solo artists, making music and ",
     "cue": "Scroll ↓"
   },
   "chapters": [
