@@ -40,8 +40,8 @@ window.YE_CONTENT =
   },
   "intro": {
     "eyebrow": "Producing · Mixing · Educating",
-    "heading": "Let's create together",
-    "sub": "I'm Yasmin — an independent producer, sound engineer and teacher working with musicians in different ages and styles. I mix, create music. Let's work together!",
+    "heading": "",
+    "sub": "I'm Yasmin — an independent producer, sound engineer and teacher working with bands and solo artists, making music and ",
     "cue": "Scroll ↓"
   },
   "chapters": [
@@ -64,7 +64,7 @@ window.YE_CONTENT =
       ],
       "photos": [
         {
-          "file": "assets/journey/01a-piano.png",
+          "file": "assets/journey/img-20230526-wa0004-mwby4smz.jpg",
           "label": "At the piano",
           "logo": false
         },
@@ -76,6 +76,11 @@ window.YE_CONTENT =
         {
           "file": "assets/journey/01c-flute.png",
           "label": "Playing flute",
+          "logo": false
+        },
+        {
+          "file": "",
+          "label": "",
           "logo": false
         },
         {
@@ -102,12 +107,12 @@ window.YE_CONTENT =
       ],
       "photos": [
         {
-          "file": "assets/journey/02a-hague.svg",
+          "file": "assets/journey/kc-logo-jewel-en-mwby8vt0.jpg",
           "label": "Placeholder logo — replace with the Royal Conservatoire The Hague",
           "logo": true
         },
         {
-          "file": "assets/journey/02b-studio.png",
+          "file": "",
           "label": "At work in a studio at the conservatoire",
           "logo": false
         }
@@ -193,7 +198,7 @@ window.YE_CONTENT =
     "heading": "At the desk",
     "body": "I mix and master from [city], and record on location when a room is worth capturing. I like records that keep the room in them — the chair creak, the breath before the line, the sound of four people playing at once.",
     "photo": {
-      "file": "assets/img-20260604-wa0009-1-mwbx2rfp.jpg",
+      "file": "assets/img-20260604-wa0010-1-mwbyeg2t.jpg",
       "alt": "Yasmin Eden at the mixing desk"
     },
     "stats": [
