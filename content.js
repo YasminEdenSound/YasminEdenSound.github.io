@@ -46,8 +46,8 @@ window.YE_CONTENT =
   },
   "chapters": [
     {
-      "kicker": "01 · The piano",
-      "heading": "It all starts at the piano.",
+      "kicker": "01 · production and original music",
+      "heading": "Production, Compositions, Arrangement",
       "paragraphs": [
         {
           "text": "Piano came first, and years of it before I recorded anything. Then I started teaching it — which is where the ear actually got trained, because you can't fix a sound you can't explain to someone else. I play flute as well. Every instrument I've learned is one more voice I can pick out inside a mix.",
@@ -107,7 +107,7 @@ window.YE_CONTENT =
       ],
       "photos": [
         {
-          "file": "assets/journey/kc-logo-jewel-en-mwby8vt0.jpg",
+          "file": "assets/journey/kc-logo-jewel-en-mwbylief.jpg",
           "label": "Placeholder logo — replace with the Royal Conservatoire The Hague",
           "logo": true
         },
