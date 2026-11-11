@@ -40,8 +40,8 @@ window.YE_CONTENT =
   },
   "intro": {
     "eyebrow": "Producing · Mixing · Educating",
-    "heading": "",
-    "sub": "I'm Yasmin — an independent producer, sound engineer and teacher working with bands and solo artists, making music and ",
+    "heading": "Let's create together",
+    "sub": "I'm Yasmin — an independent producer, sound engineer and teacher working with musicians in different ages and styles. I mix, create music. Let's work together!",
     "cue": "Scroll ↓"
   },
   "chapters": [
@@ -193,7 +193,7 @@ window.YE_CONTENT =
     "heading": "At the desk",
     "body": "I mix and master from [city], and record on location when a room is worth capturing. I like records that keep the room in them — the chair creak, the breath before the line, the sound of four people playing at once.",
     "photo": {
-      "file": "design_handoff_yasmin_eden_sound/assets/yasmin-desk.png",
+      "file": "assets/img-20260604-wa0009-1-mwbx2rfp.jpg",
       "alt": "Yasmin Eden at the mixing desk"
     },
     "stats": [
